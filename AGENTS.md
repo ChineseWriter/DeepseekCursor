@@ -159,10 +159,11 @@ UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m bigfatfish build
 
 - [x] `uv` 已就绪（用户级安装；不在 `PATH` 时用 `$HOME/.local/bin/uv`，见 §4）。
 - [x] 转换器已实现并通过 43 项测试 + 视觉验证，可产出 `themes/BigFatFish`（11 光标 / 34 别名 / 32·48·64 三档）。
-- [ ] **等待用户授权安装测试**：安装会写入工作区外的 `$HOME/.local/share/icons/`，属 R5 管辖，已在使用脚本 `scripts/install-theme.sh`（默认 dry-run）中给出计划与回滚路径。
+- [x] **安装测试已完成并经用户确认**：动效、热点、清晰度均正常。安装与回滚流程见 `scripts/install-theme.sh`（默认 dry-run，R5 管辖）。
+- [ ] 清晰度取决于**显示缩放与素材原生档的匹配**：需求像素超出最大原生档时，合成器只能拉伸。调优方法与公式见 [themes/README.md](themes/README.md)；**具体机器的缩放值等参数一律不入库（R3）**。
+- [ ] 若要在更大尺寸下保持清晰，必须取得**比现有素材更大分辨率**的原始素材（线索见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6）。插值放大不增加真实细节，默认不做（R4）。
 - [ ] 上游素材压缩包 `大肥鱼.zip` 定为**不入库**（合规结论，见 §8 与 [THIRD-PARTY.md](THIRD-PARTY.md)），仅本地个人使用。
 - [ ] 上游再分发许可待获取：联络要点见 [THIRD-PARTY.md](THIRD-PARTY.md) §3，待核实项见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6。
-- [ ] 仅输出素材原生 32/48/64；桌面若请求 24px，由合成器就近选取/缩放。是否补充插值尺寸，待安装测试后按实际观感决定（R4：不预先造数据）。
 - [ ] ruff 尚未引入；引入后补进 §4 校验链。
 
 ## 7. 本机环境能力（已具备，默认不启用）
