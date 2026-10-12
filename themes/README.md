@@ -73,7 +73,16 @@ grep -o '<scale>[^<]*' ~/.config/monitors.xml | head -1   # 本机缩放因子�
 gsettings get org.gnome.desktop.interface cursor-size      # 当前逻辑尺寸
 ```
 
-用 `原生档 ÷ s` 算出候选值逐个试；`cursor-size` 改动立即生效，随时可回退。
+**不用手算**：仓库自带脚本 [scripts/set-cursor-size.sh](../scripts/set-cursor-size.sh)，默认只读预览：
+
+```bash
+scripts/set-cursor-size.sh                  # 列出本机「原生 1:1」档位 + 上限内可用的最大档
+scripts/set-cursor-size.sh --auto --yes     # 应用「清晰前提下尽量大」的那一档
+scripts/set-cursor-size.sh --set 45 --yes   # 直接指定逻辑尺寸
+scripts/set-cursor-size.sh --reset --yes    # 恢复系统默认
+```
+
+也可以按 `原生档 ÷ s` 手算候选值逐个试；`cursor-size` 改动立即生效，随时可回退。
 
 > 两个推论：`s = 1` 时不存在这个问题；缩放越偏离整数，越容易踩中"需求落在原生档之外"。
 > 这与转换质量无关 —— 素材原生档不够时，任何加载器都只能拉伸。

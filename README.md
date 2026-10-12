@@ -7,7 +7,7 @@
 
 | | |
 | --- | --- |
-| 状态 | **可用**：转换器已实现，43 项测试 + 视觉验证通过；等待安装测试 |
+| 状态 | **可用并已在本机安装验证**：转换器实现完成，43 项测试 + 视觉验证通过；动效 / 热点 / 清晰度均已确认 |
 | 目标平台 | Ubuntu 26.04 LTS，Wayland 会话 |
 | 技术栈 | Python 3.11+（**零第三方依赖**），由 [`uv`](https://docs.astral.sh/uv/) 管理 |
 | 协作规约 | [AGENTS.md](AGENTS.md)（R1 Git / R2 uv / R3 隐私零暴露 / R4 最小改动 / R5 工作区外改动须汇报） |
@@ -59,9 +59,10 @@
 ├── docs/PROVENANCE.md            # 素材来源取证记录（脱敏）
 ├── pyproject.toml / uv.lock      # uv 项目定义与锁文件
 ├── src/bigfatfish/               # 转换器：ani.py / xcursor.py / theme.py / __main__.py
-├── scripts/install-theme.sh      # 安装脚本（默认 dry-run）
+├── scripts/install-theme.sh      # 安装主题（默认 dry-run）
+├── scripts/set-cursor-size.sh    # 调光标尺寸（默认只读预览）
 ├── tests/                        # stdlib unittest（含独立交叉校验器）
-├── assets/                       # 上游素材（不入库，仅本地）
+├── assets/                       # 唯一的本地素材区（不入库）：原始压缩包 + 解包结果
 └── themes/                       # 生成的主题（不入库，仅本地）
 ```
 
@@ -73,44 +74,42 @@
 
 ```bash
 # uv 可能不在 PATH（例如只装在 ~/.local/bin）
-UV=$(command -v uv || echo "$HOME/.local/bin/uv")
+export PATH="$HOME/.local/bin:$PATH"
 
 # 素材解包到本地（assets/ 不入库）
 unzip assets/大肥鱼.zip -d assets/
 
 # 构建主题 -> themes/BigFatFish/（11 个光标 + 34 个软链别名）
-UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m bigfatfish build
+PYTHONPATH=src uv run python -m bigfatfish build
 
 # 只看角色映射表（来自 install.inf，不臆造）
-UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m bigfatfish list
+PYTHONPATH=src uv run python -m bigfatfish list
 
 # 测试
-UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m unittest discover -s tests -v
+PYTHONPATH=src uv run python -m unittest discover -s tests -v
 ```
 
-`UV_CACHE_DIR` 指向工作区内，避免 uv 去写 `$HOME/.cache/uv`（见 [AGENTS.md](AGENTS.md) R5）。
+## 安装与调尺寸
 
-## 安装（会改动工作区之外，先看计划）
-
-⚠️ 安装会写入 `$HOME/.local/share/icons/`（或 `$XDG_DATA_HOME`），属 [AGENTS.md](AGENTS.md) **R5** 管辖：**默认 dry-run，须显式确认才执行**。
+⚠️ 下面两条都会改动**工作区之外**（`$HOME`、dconf），属 [AGENTS.md](AGENTS.md) **R5** 管辖：**默认只打印计划，须显式确认才执行**。
 
 ```bash
-scripts/install-theme.sh                  # 只打印计划
-scripts/install-theme.sh --yes            # 安装（同名旧主题自动备份为 .bak）
-scripts/install-theme.sh --uninstall --yes
-```
-
-安装后启用（GNOME）：
-
-```bash
+# 1) 安装主题（装到 $XDG_DATA_HOME/icons；同名旧主题自动备份为 .bak）
+scripts/install-theme.sh --yes
 gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
+
+# 2) 挑光标尺寸：让「逻辑尺寸 × 显示器缩放」落在主题原生档上，避免被拉伸而发虚
+scripts/set-cursor-size.sh                  # 只读：列出本机清晰档位 + 上限内最大档
+scripts/set-cursor-size.sh --auto --yes     # 应用「清晰前提下尽量大」
+scripts/set-cursor-size.sh --set 45 --yes   # 或直接指定一个值
+scripts/set-cursor-size.sh --reset --yes    # 恢复系统默认
 ```
 
-Wayland 会缓存光标主题，**注销并重新登录**后生效。该命令修改桌面设置（dconf），同属 R5 管辖，需确认后执行。
+尺寸为什么影响清晰度、公式怎么来的，见 [themes/README.md](themes/README.md)。Wayland 会缓存光标主题，**注销并重新登录**后完全生效。
 
 ## 已知限制
 
-- 只输出素材**原生**的 32 / 48 / 64 三档标称尺寸，不做插值放大（R4：不造数据）。桌面若请求 24px，由合成器就近选取或缩放。
+- 只输出素材**原生**的 32 / 48 / 64 三档标称尺寸，不做插值放大（R4：不造数据）。桌面请求的尺寸若不落在这些档位上，合成器会就近选取并拉伸——用 `scripts/set-cursor-size.sh` 可以避开拉伸。
 - 不支持 PNG 压缩的 ICO 帧（遇到会明确报错）。本项目素材为 `BI_RGB` DIB。
 - ruff 尚未引入；代码质量目前由 43 项测试与视觉验证保证。
 
@@ -119,7 +118,7 @@ Wayland 会缓存光标主题，**注销并重新登录**后生效。该命令�
 按 [AGENTS.md](AGENTS.md) R2 一律走 `uv`。零第三方依赖，`uv sync` 无需联网装包：
 
 ```bash
-UV_CACHE_DIR="$PWD/.uv-cache" uv sync
+uv sync
 ```
 
 > 备注：本项目是本地桌面工具，不提供网络服务。若将来引入网络服务形态，AGPL-3.0 §13 要求向使用者提供对应源代码。
