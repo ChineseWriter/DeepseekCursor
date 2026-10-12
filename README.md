@@ -1,125 +1,124 @@
 <!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->
 <!-- Copyright (C) 2026 BigFatFish contributors -->
 
-# 大肥鱼（BigFatFish）光标主题 · Ubuntu 26.04 / Wayland 移植
+# 大肥鱼（BigFatFish）光标主题
 
-把 Windows 动画光标主题（`.ani` + `install.inf`）转换为 **Ubuntu 26.04 LTS / Wayland** 下可直接使用的 XCursor 主题。
+**Ubuntu 26.04 / Wayland 可直接使用的全动态鼠标光标主题 —— 克隆下来就能装。**
+
+![主题预览](docs/preview.png)
 
 | | |
 | --- | --- |
-| 状态 | **可用并已在本机安装验证**：转换器实现完成，50 项测试 + 视觉验证通过；动效 / 热点 / 清晰度均已确认 |
-| 仓库内容 | **只含转换工具与文档**：上游素材与主题产物按合规要求不入库（见下方「重要合规约束」），克隆后需自备素材才能构建 |
-| 目标平台 | Ubuntu 26.04 LTS，Wayland 会话 |
-| 技术栈 | Python 3.11+（**零第三方依赖**），由 [`uv`](https://docs.astral.sh/uv/) 管理 |
-| 协作规约 | [AGENTS.md](AGENTS.md)（R1 Git / R2 uv / R3 隐私零暴露 / R4 最小改动 / R5 工作区外改动须汇报） |
+| 内容 | 11 个动态光标 + 34 个别名，覆盖左键、忙碌、文本、缩放、移动等常用角色 |
+| 原生尺寸 | 32 / 48 / 64 三档（不做插值放大，见[光标大小与清晰度](#光标大小与清晰度)） |
+| 目标平台 | Ubuntu 26.04 LTS，**Wayland** 会话（GNOME 实测；KDE 等同理） |
+| 主题许可 | 美术层 **CC BY-NC-SA 4.0**（非商业），见 [ATTRIBUTION.md](ATTRIBUTION.md) |
+| 代码许可 | `tools/`、`install.sh` 为 **AGPL-3.0-or-later** |
 
 ---
 
-## 许可总览
+## 安装
 
-**本仓库不是单一许可**，按内容范围分别授权：
+⚠️ 会写入 `$HOME`（`$XDG_DATA_HOME/icons`），属 [AGENTS.md](AGENTS.md) **R5** 管辖：**默认只打印计划，加 `--yes` 才真正落盘**。
 
-| 范围 | 许可（SPDX） | 全文 |
-| --- | --- | --- |
-| 源代码（`src/`、`scripts/`、`tests/`、构建与转换工具） | `AGPL-3.0-or-later` | [LICENSE](LICENSE) |
-| 本项目原创的非代码内容（文档、说明、配置、注释） | `CC-BY-NC-SA-4.0` | [LICENSE-CC-BY-NC-SA-4.0](LICENSE-CC-BY-NC-SA-4.0) |
-| 上游光标美术素材及其派生图像 | **第三方权利，本仓库不收录、不授予任何许可** | 见 [THIRD-PARTY.md](THIRD-PARTY.md) |
+```bash
+./install.sh                 # 预览：只打印将要做什么
+./install.sh --yes           # 安装到 ~/.local/share/icons/BigFatFish
 
-新增文件必须带 SPDX 头（约定见 [AGENTS.md §8](AGENTS.md)）。
+gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
+# 然后注销并重新登录（Wayland 会缓存光标主题）
+```
 
-### 为什么非代码层用 CC BY-NC-SA 4.0 而不是 CC BY-SA
+卸载（移入回收站，可恢复）：
 
-因为上游授权链本身就是 **非商业 + 相同方式共享**（其权利人公开声明原文见 [docs/PROVENANCE.md](docs/PROVENANCE.md)）。本项目的产物美术层是该链条的演绎作品，只可能合法地按"非商业 + 相同方式共享"存在。若把文档层标成允许商业使用的 CC BY-SA，会给使用者一个与实际权利状态不符的信号。
+```bash
+./install.sh --uninstall --yes
+```
 
-若将来替换为**完全自有**的美术，非代码层可放宽为 `CC-BY-SA-4.0`；那是一处一次性改动，须同步更新本表、`LICENSE-CC-BY-NC-SA-4.0` 与 [THIRD-PARTY.md](THIRD-PARTY.md)。
+非 GNOME 桌面：在系统设置里选择 `BigFatFish` 即可（KDE：系统设置 → 外观 → 光标）。
 
----
+## 光标大小与清晰度
 
-## 重要合规约束（使用前必读）
+本主题只有 32 / 48 / 64 三档**原生**像素。合成器按 `需求像素 = round(cursor-size × 显示器缩放)` 取图；
+需求若落在这三档之外，它只能拉伸现有档，**必然发虚**。清晰条件因此是：
 
-1. **禁止商业使用。** 本项目及其产物不得用于任何商业目的——美术层的上游链条为非商业许可。
-2. **上游素材及其派生图像不进仓库。** 由 `.gitignore` 强制拦截；仅限本地个人使用。仓库只包含我们自己的工具与文档。
-3. **不得移除或篡改上游署名。** 分发时必须携带 [THIRD-PARTY.md](THIRD-PARTY.md) 中的署名声明。
-4. **文档中不得内嵌上游美术截图**（那会构成再分发）。
-5. **对外分发前必须先取得书面许可。** 打包、上架、发版、提交到发行版仓库之前，须获得上游权利人的明确许可，并把许可凭据记入 [THIRD-PARTY.md](THIRD-PARTY.md)。
-6. 所有对外链接必须**剥离跟踪参数**（`vd_source`、`spm_id_from`、`share_session_id` 等），见 R3。
+```
+cursor-size ≈ 原生档 ÷ 显示器缩放
+```
 
-> 一句话：**代码开源，美术素材不是我们的，别拿去商用、也别打包发出去。**
+**每台机器的缩放不同，必须现场实测**（仓库不记录任何具体机器的参数）。仓库自带选档脚本：
 
----
+```bash
+tools/scripts/set-cursor-size.sh                 # 只读：列出你的清晰档位与上限内最大档
+tools/scripts/set-cursor-size.sh --auto --yes    # 应用「清晰前提下尽量大」
+tools/scripts/set-cursor-size.sh --set 24 --yes  # 或直接指定一个值
+tools/scripts/set-cursor-size.sh --reset --yes   # 恢复系统默认
+```
+
+原理、加载器行为与验证陷阱见 [docs/TECH-NOTES.md](docs/TECH-NOTES.md)。
+
+## 署名与许可（必读）
+
+本主题是**第三方美术作品的演绎作品**：只做了格式转换（Windows 动画光标 → XCursor），未改动美术。
+
+| 环节 | 作者 |
+| --- | --- |
+| 原始角色形象 | 上善无形 |
+| 二创与授权声明（CC BY-NC-SA 4.0） | ZipZipPipe |
+| Windows 光标包 | 4evergr8（[BV1WypJ6WExu](https://www.bilibili.com/video/BV1WypJ6WExu)） |
+
+完整声明、你必须履行的义务（**署名 / 非商业 / 相同方式共享**）与已知残余风险，
+见 **[ATTRIBUTION.md](ATTRIBUTION.md)** —— 对外分发时必须原样携带。
 
 ## 目录
 
 ```
 .
-├── AGENTS.md                     # 协作规约（R1–R5、校验命令、许可与合规）
-├── LICENSE                       # AGPL-3.0（代码）
-├── LICENSE-CC-BY-NC-SA-4.0       # CC BY-NC-SA 4.0（原创非代码内容）
-├── README.md
-├── THIRD-PARTY.md                # 第三方素材权属、署名、授权联络与移除通道
-├── docs/PROVENANCE.md            # 素材来源取证记录（脱敏）
-├── pyproject.toml / uv.lock      # uv 项目定义与锁文件
-├── src/bigfatfish/               # 转换器：ani.py / xcursor.py / theme.py / __main__.py
-├── scripts/install-theme.sh      # 安装主题（默认 dry-run）
-├── scripts/set-cursor-size.sh    # 调光标尺寸（默认只读预览）
-├── tests/                        # stdlib unittest（含独立交叉校验器）
-├── assets/                       # 唯一的本地素材区（不入库）：原始压缩包 + 解包结果
-└── themes/                       # 生成的主题（不入库，仅本地）
+├── BigFatFish/                   # 主题本体：index.theme + cursors/（11 光标 + 34 别名）
+├── install.sh                    # 安装 / 卸载（默认 dry-run；写 $HOME 属 R5 管辖）
+├── ATTRIBUTION.md                # 署名与许可（对外分发必须携带）
+├── LICENSE                       # CC BY-NC-SA 4.0（主题美术与文档）
+├── THIRD-PARTY.md                # 第三方权属、授权联络与移除通道
+├── docs/
+│   ├── PROVENANCE.md             # 来源取证记录（脱敏）
+│   ├── TECH-NOTES.md             # 格式、加载器实测、尺寸/缩放原理
+│   └── preview.png               # 预览图
+├── assets/                       # 本地素材区（**不入库**）：Windows 原始包与解包结果
+└── tools/                        # 从 .ani 重新生成主题的转换器（AGPL-3.0-or-later）
+    ├── LICENSE                   # AGPL 全文
+    ├── pyproject.toml / uv.lock  # uv 项目定义与锁文件（零第三方依赖）
+    ├── src/bigfatfish/           # ani.py / xcursor.py / theme.py / __main__.py
+    ├── tests/                    # 50 项 stdlib unittest（含独立交叉校验器）
+    └── scripts/set-cursor-size.sh
 ```
 
-## 上游署名
+## 从素材重新构建（可选）
 
-本项目的形象与素材来自第三方，来源、权利状态与署名声明见 [THIRD-PARTY.md](THIRD-PARTY.md) 与 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
+主题已经构建好，普通用户不需要这一步。要从 Windows 原始包重建：
 
-## 用法
+1. 自备素材（`.ani` + `install.inf`）放到 `assets/BigFatFish/`（**原始素材不入库**，见 `.gitignore`）
+2. 构建：
 
 ```bash
-# uv 可能不在 PATH（例如只装在 ~/.local/bin）
-export PATH="$HOME/.local/bin:$PATH"
-
-# 素材解包到本地（assets/ 不入库）
-unzip assets/大肥鱼.zip -d assets/
-
-# 构建主题 -> themes/BigFatFish/（11 个光标 + 34 个软链别名）
-PYTHONPATH=src uv run python -m bigfatfish build
-
-# 只看角色映射表（来自 install.inf，不臆造）
-PYTHONPATH=src uv run python -m bigfatfish list
-
-# 测试
-PYTHONPATH=src uv run python -m unittest discover -s tests -v
+export PATH="$HOME/.local/bin:$PATH"                # uv 可能只装在 ~/.local/bin
+cd tools
+PYTHONPATH=src uv run python -m bigfatfish build    # 重新生成 ../BigFatFish/
+PYTHONPATH=src uv run python -m bigfatfish list     # 只看角色映射表（来自 install.inf）
 ```
-
-## 安装与调尺寸
-
-⚠️ 下面两条都会改动**工作区之外**（`$HOME`、dconf），属 [AGENTS.md](AGENTS.md) **R5** 管辖：**默认只打印计划，须显式确认才执行**。
-
-```bash
-# 1) 安装主题（装到 $XDG_DATA_HOME/icons；同名旧主题自动备份为 .bak）
-scripts/install-theme.sh --yes
-gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
-
-# 2) 挑光标尺寸：让「逻辑尺寸 × 显示器缩放」落在主题原生档上，避免被拉伸而发虚
-scripts/set-cursor-size.sh                  # 只读：列出本机清晰档位 + 上限内最大档
-scripts/set-cursor-size.sh --auto --yes     # 应用「清晰前提下尽量大」
-scripts/set-cursor-size.sh --set 45 --yes   # 或直接指定一个值
-scripts/set-cursor-size.sh --reset --yes    # 恢复系统默认
-```
-
-尺寸为什么影响清晰度、公式怎么来的，见 [themes/README.md](themes/README.md)。Wayland 会缓存光标主题，**注销并重新登录**后完全生效。
 
 ## 已知限制
 
-- 只输出素材**原生**的 32 / 48 / 64 三档标称尺寸，不做插值放大（R4：不造数据）。桌面请求的尺寸若不落在这些档位上，合成器会就近选取并拉伸——用 `scripts/set-cursor-size.sh` 可以避开拉伸。
-- 不支持 PNG 压缩的 ICO 帧（遇到会明确报错）。本项目素材为 `BI_RGB` DIB。
-- ruff 尚未引入；代码质量目前由 50 项测试与视觉验证保证。
+- 只输出素材**原生**的 32 / 48 / 64 档，不做插值放大（放大不增加真实细节）。桌面请求的尺寸若不落在原生档上会被拉伸 —— 用选档脚本避开。
+- 不支持 PNG 压缩的 ICO 帧（遇到会明确报错）；本项目素材为 `BI_RGB` DIB。
+- `tools/` 需要 Python 3.11+，零第三方依赖。
+- ruff 尚未引入；质量由 50 项测试与视觉验证保证。
 
-## 开发环境
-
-按 [AGENTS.md](AGENTS.md) R2 一律走 `uv`。零第三方依赖，`uv sync` 无需联网装包：
+## 开发
 
 ```bash
-uv sync
+cd tools
+uv sync                                                    # 零依赖，无需联网装包
+PYTHONPATH=src uv run python -m unittest discover -s tests -v
 ```
 
-> 备注：本项目是本地桌面工具，不提供网络服务。若将来引入网络服务形态，AGPL-3.0 §13 要求向使用者提供对应源代码。
+协作规约（Git / uv / 隐私零暴露 / 最小改动 / 工作区外改动须汇报）见 [AGENTS.md](AGENTS.md)。
