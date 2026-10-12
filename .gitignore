@@ -58,6 +58,8 @@ tmp/
 
 # ---- 本机配置文件与残留（R3：这类文件是本机参数泄露的常见来源）----
 monitors.xml
+core
+core.*
 *.bak
 *.orig
 *.rej
