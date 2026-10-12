@@ -29,6 +29,10 @@ AF_SEQUENCE = 0x2
 JIFFIES_PER_SECOND = 60
 
 _ANIH_FIELDS = 9
+
+#: anih.nSteps 来自不可信文件，物化显示序列之前必须先做上限校验：
+#: 否则一个 200 多字节的小文件（nSteps=0xFFFFFFFF）就能让进程分配数十亿元素而 OOM。
+_MAX_STEPS = 4096
 _ICONDIR_SIZE = 6
 _ICONDIRENTRY_SIZE = 16
 _DIB_HEADER_SIZE = 40
@@ -110,7 +114,8 @@ def read_ani(data: bytes) -> AnimatedCursor:
     seq: list[int] = []
     icons: list[bytes] = []
 
-    for cid, start, end in _iter_chunks(data, 12, len(data)):
+    # 只解析 RIFF 头声明的范围内（上面已校验它不超过文件大小）
+    for cid, start, end in _iter_chunks(data, 12, declared + 8):
         if cid == b"anih":
             if end - start < _ANIH_FIELDS * 4:
                 raise AniError("anih 块不足 36 字节")
@@ -135,6 +140,9 @@ def read_ani(data: bytes) -> AnimatedCursor:
         raise AniError(f"anih 声明 {n_frames} 帧，实际找到 {len(icons)} 个 icon 块")
     if n_frames == 0:
         raise AniError("素材没有任何帧")
+    # nSteps 来自不可信文件：必须在物化显示序列之前做上限校验（见 _MAX_STEPS）
+    if not 0 < n_steps <= _MAX_STEPS:
+        raise AniError(f"anih.nSteps={n_steps} 不合理（应为 1..{_MAX_STEPS}）")
 
     frames = [parse_ico(blob) for blob in icons]
 

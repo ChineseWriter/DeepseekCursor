@@ -107,6 +107,25 @@ class ParseAniTests(unittest.TestCase):
             parse_ico(b"\x00\x00\x02\x00\x00\x00")
 
 
+    def test_rejects_absurd_nsteps_without_allocating(self):
+        """anih.nSteps 来自不可信文件：必须在展开显示序列之前拒绝。
+
+        否则一个几百字节的小文件（nSteps=0xFFFFFFFF）就能让进程分配数十亿元素而 OOM。
+        """
+        with self.assertRaises(AniError):
+            read_ani(one_frame_ani(declared_steps=0xFFFFFFFF))
+
+    def test_rejects_zero_nsteps(self):
+        with self.assertRaises(AniError):
+            read_ani(one_frame_ani(declared_steps=0))
+
+    def test_ignores_bytes_after_declared_riff_size(self):
+        """RIFF 头声明的范围之外不应被当成块继续解析。"""
+        blob = one_frame_ani()
+        cursor = read_ani(blob + b"\x00" * 64)
+        self.assertEqual(cursor.frame_count, 1)
+
+
 @unittest.skipUnless(ASSETS.is_dir(), "本地素材不存在（assets/ 不入库，属预期）")
 class RealAssetTests(unittest.TestCase):
     def test_frame_counts_match_install_inf(self):
