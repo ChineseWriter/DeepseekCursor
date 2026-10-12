@@ -92,6 +92,25 @@ class BuildTests(unittest.TestCase):
         parsed = parse(build([image_from_frame(solid_frame(32, 32), 32, 100)]))
         self.assertEqual(parsed["images"][0]["delay"], 100)
 
+    def test_rejects_delay_beyond_u32(self):
+        """延迟来自不可信文件的 u32：超范围必须抛 XcursorError，而不是 struct.error。"""
+        with self.assertRaises(XcursorError):
+            image_from_frame(solid_frame(32, 32), 32, 0xFFFFFFFF * 1000 // 60)
+
+    def test_rejects_invalid_nominal(self):
+        image = image_from_frame(solid_frame(32, 32), 32)
+        broken = type(image)(
+            nominal=0,
+            width=image.width,
+            height=image.height,
+            hotspot_x=0,
+            hotspot_y=0,
+            delay_ms=0,
+            pixels_argb=image.pixels_argb,
+        )
+        with self.assertRaises(XcursorError):
+            build([broken])
+
     def test_rejects_empty(self):
         with self.assertRaises(XcursorError):
             build([])

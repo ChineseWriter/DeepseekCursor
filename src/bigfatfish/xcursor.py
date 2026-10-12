@@ -78,8 +78,8 @@ def image_from_frame(frame: Frame, nominal: int | None = None, delay_ms: int = 0
         raise XcursorError(
             f"热点 ({frame.hotspot_x}, {frame.hotspot_y}) 超出 {frame.width}x{frame.height}"
         )
-    if delay_ms < 0:
-        raise XcursorError(f"帧延迟非法：{delay_ms}")
+    if not 0 <= delay_ms <= 0xFFFFFFFF:
+        raise XcursorError(f"帧延迟超出 u32 范围：{delay_ms}")
     return XImage(
         nominal=nominal,
         width=frame.width,
@@ -112,6 +112,10 @@ def build(images: Sequence[XImage]) -> bytes:
             )
         if not (0 <= image.hotspot_x < image.width and 0 <= image.hotspot_y < image.height):
             raise XcursorError("热点超出图像范围")
+        if not 0 < image.nominal <= 0xFFFF:
+            raise XcursorError(f"标称尺寸非法：{image.nominal}")
+        if not 0 <= image.delay_ms <= 0xFFFFFFFF:
+            raise XcursorError(f"帧延迟超出 u32 范围：{image.delay_ms}")
         toc.append((IMAGE_TYPE, image.nominal, position))
         header = struct.pack(
             "<9I",
