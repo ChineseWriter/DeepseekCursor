@@ -85,24 +85,43 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 
 > 判断标准：把内容贴给一个陌生人，他能否据此定位到具体的人或某台具体机器？能，就是违规。
 
+### R4 — 最小改动原则
+
+1. 只改任务必需的文件与行。**禁止**顺手重构、无关格式化、顺手升级依赖、批量重命名。
+2. 新增文件前先问"能不能改现有文件解决"；新增依赖前先问"标准库够不够"（本项目当前**零第三方依赖**，应保持）。
+3. 不写投机性代码：没有当前用例支撑的抽象、配置项、兼容分支、预留开关一律不加。
+4. 不凭空造数据：只使用素材里真实存在的尺寸与格式，不做无依据的放大插值与格式臆造。
+5. 改动范围必须能用一句话写进提交信息；说不清就是范围过大，应拆分提交。
+6. 删除或覆盖前先确认目标身份：只删自己生成的产物；对可能已存在的目录加护栏（参照 `theme.py` 的"非本工具生成则拒绝写入"与 `--force`）。
+7. 生成物与临时验证产物不进仓库，也不长期留在工作区（用完清理）。
+
+### R5 — 工作区外改动必须汇报
+
+1. **"工作区外"= 本仓库根目录之外的一切路径**：`$HOME` 下的配置 / 图标 / 缓存、系统目录、桌面设置（gsettings / dconf）、systemd、包管理器状态、全局 git 配置、守护进程状态。
+2. **动手前**必须向用户报告：要改什么、为什么、改哪个路径、如何回滚，取得同意后才执行。
+3. **动手后**必须再报告实际结果：执行的命令、被改动的路径、结果；**包括"本该发生却被环境拒绝"的情况**（例如沙箱只读导致失败），不得默默略过。
+4. 优先选择不改动工作区外的方案：能把缓存与状态指向工作区内（如 `UV_CACHE_DIR=./.uv-cache`）就不要写 `$HOME`；能用户级就不系统级；**未经用户明确要求绝不使用 `sudo`**。
+5. 任何会写入 `$HOME` 或系统路径的脚本必须：默认 **dry-run**（只打印计划，需显式确认参数才执行）、提供卸载 / 回滚路径、并禁止硬编码真实家目录（用 `$HOME` / `$XDG_*`，见 R3）。
+
 ---
 
 ## 3. 目录约定（随项目演进补充）
 
 ```
 .
-├── AGENTS.md                     # 本文件（含 §8 许可与合规）
+├── AGENTS.md                     # 本文件（含 §4 校验、§8 许可与合规）
 ├── LICENSE                       # AGPL-3.0（代码）
 ├── LICENSE-CC-BY-NC-SA-4.0       # CC BY-NC-SA 4.0（本项目原创非代码内容）
-├── README.md                     # 许可总览与合规约束
+├── README.md                     # 用法、许可总览与合规约束
 ├── THIRD-PARTY.md                # 第三方素材权属、署名、授权联络、移除通道
 ├── docs/PROVENANCE.md            # 素材来源取证记录（脱敏）
-├── pyproject.toml                # uv 项目定义（依赖唯一来源）
+├── pyproject.toml                # uv 项目定义（依赖唯一来源；零第三方依赖）
 ├── uv.lock                       # 锁文件，必须提交
-├── src/                          # Python 源码
+├── src/bigfatfish/               # 源码：ani.py / xcursor.py / theme.py / __main__.py
+├── scripts/install-theme.sh      # 安装脚本（默认 dry-run，写入 $HOME 属 R5 管辖）
+├── tests/                        # stdlib unittest；含独立 XCursor/ANI 交叉校验器
 ├── assets/                       # 上游光标素材（**不入库**，仅本地）
-├── themes/                       # 生成的主题（**不入库**，仅本地）
-└── tests/                        # 测试
+└── themes/                       # 生成的主题（**不入库**，仅本地）
 ```
 
 目录按需创建；新增顶层目录时同步更新本节。
@@ -110,11 +129,20 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 ## 4. 校验命令（提交前必跑）
 
 ```bash
-uv run python -m compileall -q src
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest -q
+# 测试（当前唯一必需的校验；零第三方依赖，无需安装任何包）
+UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m unittest discover -s tests -v
+
+# 端到端构建（产出 themes/BigFatFish）
+UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m bigfatfish build
+
+# 引入 ruff 之后再补：uv run ruff check . && uv run ruff format --check .
 ```
+
+三点说明：
+
+- `UV_CACHE_DIR` 指向工作区内，避免 uv 写 `$HOME/.cache/uv`（R5：能不动工作区外就不动）。
+- `uv` 若不在 `PATH`（例如只装在 `~/.local/bin`），用 `UV=$(command -v uv || echo "$HOME/.local/bin/uv")` 取路径。
+- `PYTHONPATH=src` 是必要的：`pyproject.toml` 设了 `package = false`（零依赖、不引入打包后端），源码目录不会自动进 `sys.path`。
 
 工具尚未配置时，至少跑通当前已存在的部分；不得以"还没配"为由跳过已存在的检查。
 
@@ -129,10 +157,13 @@ uv run pytest -q
 
 ## 6. 已知待办（bootstrap）
 
-- [ ] 当前环境尚未安装 `uv`：执行 R2 前需先按官方方式安装。
+- [x] `uv` 已就绪（用户级安装；不在 `PATH` 时用 `$HOME/.local/bin/uv`，见 §4）。
+- [x] 转换器已实现并通过 43 项测试 + 视觉验证，可产出 `themes/BigFatFish`（11 光标 / 34 别名 / 32·48·64 三档）。
+- [ ] **等待用户授权安装测试**：安装会写入工作区外的 `$HOME/.local/share/icons/`，属 R5 管辖，已在使用脚本 `scripts/install-theme.sh`（默认 dry-run）中给出计划与回滚路径。
 - [ ] 上游素材压缩包 `大肥鱼.zip` 定为**不入库**（合规结论，见 §8 与 [THIRD-PARTY.md](THIRD-PARTY.md)），仅本地个人使用。
 - [ ] 上游再分发许可待获取：联络要点见 [THIRD-PARTY.md](THIRD-PARTY.md) §3，待核实项见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6。
-- [ ] ruff / pytest 等校验链随首个 Python 模块一并建立。
+- [ ] 仅输出素材原生 32/48/64；桌面若请求 24px，由合成器就近选取/缩放。是否补充插值尺寸，待安装测试后按实际观感决定（R4：不预先造数据）。
+- [ ] ruff 尚未引入；引入后补进 §4 校验链。
 
 ## 7. 本机环境能力（已具备，默认不启用）
 

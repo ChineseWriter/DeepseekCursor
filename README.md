@@ -7,10 +7,10 @@
 
 | | |
 | --- | --- |
-| 状态 | bootstrap（尚无代码） |
+| 状态 | **可用**：转换器已实现，43 项测试 + 视觉验证通过；等待安装测试 |
 | 目标平台 | Ubuntu 26.04 LTS，Wayland 会话 |
-| 技术栈 | Python，由 [`uv`](https://docs.astral.sh/uv/) 管理 |
-| 协作规约 | [AGENTS.md](AGENTS.md)（R1 Git / R2 uv / R3 隐私零暴露，含许可合规 §8） |
+| 技术栈 | Python 3.11+（**零第三方依赖**），由 [`uv`](https://docs.astral.sh/uv/) 管理 |
+| 协作规约 | [AGENTS.md](AGENTS.md)（R1 Git / R2 uv / R3 隐私零暴露 / R4 最小改动 / R5 工作区外改动须汇报） |
 
 ---
 
@@ -51,24 +51,75 @@
 
 ```
 .
-├── AGENTS.md                     # 协作规约（含 §8 许可与合规）
+├── AGENTS.md                     # 协作规约（R1–R5、校验命令、许可与合规）
 ├── LICENSE                       # AGPL-3.0（代码）
 ├── LICENSE-CC-BY-NC-SA-4.0       # CC BY-NC-SA 4.0（原创非代码内容）
 ├── README.md
 ├── THIRD-PARTY.md                # 第三方素材权属、署名、授权联络与移除通道
 ├── docs/PROVENANCE.md            # 素材来源取证记录（脱敏）
+├── pyproject.toml / uv.lock      # uv 项目定义与锁文件
+├── src/bigfatfish/               # 转换器：ani.py / xcursor.py / theme.py / __main__.py
+├── scripts/install-theme.sh      # 安装脚本（默认 dry-run）
+├── tests/                        # stdlib unittest（含独立交叉校验器）
 ├── assets/                       # 上游素材（不入库，仅本地）
-├── themes/                       # 生成的主题（不入库，仅本地）
-├── src/                          # Python 源码
-└── tests/
+└── themes/                       # 生成的主题（不入库，仅本地）
 ```
 
 ## 上游署名
 
 本项目的形象与素材来自第三方，来源、权利状态与署名声明见 [THIRD-PARTY.md](THIRD-PARTY.md) 与 [docs/PROVENANCE.md](docs/PROVENANCE.md)。
 
+## 用法
+
+```bash
+# uv 可能不在 PATH（例如只装在 ~/.local/bin）
+UV=$(command -v uv || echo "$HOME/.local/bin/uv")
+
+# 素材解包到本地（assets/ 不入库）
+unzip 大肥鱼.zip -d assets/
+
+# 构建主题 -> themes/BigFatFish/（11 个光标 + 34 个软链别名）
+UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m bigfatfish build
+
+# 只看角色映射表（来自 install.inf，不臆造）
+UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m bigfatfish list
+
+# 测试
+UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m unittest discover -s tests -v
+```
+
+`UV_CACHE_DIR` 指向工作区内，避免 uv 去写 `$HOME/.cache/uv`（见 [AGENTS.md](AGENTS.md) R5）。
+
+## 安装（会改动工作区之外，先看计划）
+
+⚠️ 安装会写入 `$HOME/.local/share/icons/`（或 `$XDG_DATA_HOME`），属 [AGENTS.md](AGENTS.md) **R5** 管辖：**默认 dry-run，须显式确认才执行**。
+
+```bash
+scripts/install-theme.sh                  # 只打印计划
+scripts/install-theme.sh --yes            # 安装（同名旧主题自动备份为 .bak）
+scripts/install-theme.sh --uninstall --yes
+```
+
+安装后启用（GNOME）：
+
+```bash
+gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
+```
+
+Wayland 会缓存光标主题，**注销并重新登录**后生效。该命令修改桌面设置（dconf），同属 R5 管辖，需确认后执行。
+
+## 已知限制
+
+- 只输出素材**原生**的 32 / 48 / 64 三档标称尺寸，不做插值放大（R4：不造数据）。桌面若请求 24px，由合成器就近选取或缩放。
+- 不支持 PNG 压缩的 ICO 帧（遇到会明确报错）。本项目素材为 `BI_RGB` DIB。
+- ruff 尚未引入；代码质量目前由 43 项测试与视觉验证保证。
+
 ## 开发环境
 
-按 [AGENTS.md](AGENTS.md) R2：一律 `uv`。当前环境尚未安装 `uv`，安装后方可执行 `uv sync` / `uv run`。
+按 [AGENTS.md](AGENTS.md) R2 一律走 `uv`。零第三方依赖，`uv sync` 无需联网装包：
+
+```bash
+UV_CACHE_DIR="$PWD/.uv-cache" uv sync
+```
 
 > 备注：本项目是本地桌面工具，不提供网络服务。若将来引入网络服务形态，AGPL-3.0 §13 要求向使用者提供对应源代码。
