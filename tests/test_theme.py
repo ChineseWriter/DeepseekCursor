@@ -133,6 +133,30 @@ class BuildThemeTests(unittest.TestCase):
         self.assertEqual(len(report.cursors), 11)
         self.assertTrue((self.out / "someone-elses-file.txt").exists())
 
+    def test_refuses_symlinked_cursor_file_without_touching_target(self):
+        """规范名被换成软链时必须拒绝：否则会以本进程身份覆写链接目标。"""
+        victim = Path(self._tmp.name) / "victim.txt"
+        victim.write_text("original", encoding="utf-8")
+        cursors = self.out / "cursors"
+        cursors.mkdir(parents=True)
+        (cursors / "left_ptr").symlink_to(victim)
+
+        with self.assertRaises(ThemeError):
+            build_theme(ASSETS, self.out)
+        self.assertEqual(victim.read_text(encoding="utf-8"), "original")
+
+    def test_refuses_symlinked_cursors_dir(self):
+        """cursors/ 本身是软链时，整批产物会被重定向，必须拒绝。"""
+        elsewhere = Path(self._tmp.name) / "elsewhere"
+        elsewhere.mkdir()
+        self.out.mkdir()
+        (self.out / "index.theme").write_text(f"Name={THEME_NAME}\n", encoding="utf-8")
+        (self.out / "cursors").symlink_to(elsewhere, target_is_directory=True)
+
+        with self.assertRaises(ThemeError):
+            build_theme(ASSETS, self.out)
+        self.assertEqual(list(elsewhere.iterdir()), [])
+
     def test_missing_assets_raises(self):
         with self.assertRaises(ThemeError):
             build_theme(ROOT / "assets" / "nonexistent", self.out)

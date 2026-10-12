@@ -112,13 +112,13 @@ def build_theme(
     if missing:
         raise ThemeError("素材目录缺少文件：" + ", ".join(missing))
 
+    if out_dir.is_symlink():
+        raise ThemeError(f"{out_dir} 是符号链接，拒绝写入（可能被重定向到别处）")
     if out_dir.exists() and any(out_dir.iterdir()) and not force and not _is_our_theme(out_dir):
         raise ThemeError(f"{out_dir} 已存在且不是本工具生成的主题；确认覆盖请加 --force")
 
-    cursors_dir = out_dir / "cursors"
-    cursors_dir.mkdir(parents=True, exist_ok=True)
-
-    reports: list[CursorReport] = []
+    # 先全部解析并编码，再统一落盘：任一素材有问题时不会留下新旧混合的半成品
+    planned: list[tuple[CursorSpec, bytes, int, int, tuple[int, ...]]] = []
     for spec in CURSORS:
         _validate_name(spec.canonical)
         cursor = read_ani_file(asset_dir / spec.source)
@@ -135,10 +135,30 @@ def build_theme(
         if not images:
             raise ThemeError(f"{spec.source}：没有匹配尺寸 {sizes} 的帧")
 
-        blob = xcursor.build(images)
+        planned.append(
+            (
+                spec,
+                xcursor.build(images),
+                len(cursor.steps),
+                len(images),
+                tuple(sorted(written_sizes)),
+            )
+        )
+
+    cursors_dir = out_dir / "cursors"
+    if cursors_dir.is_symlink():
+        raise ThemeError(f"{cursors_dir} 是符号链接，拒绝写入（可能被重定向到别处）")
+    cursors_dir.mkdir(parents=True, exist_ok=True)
+
+    reports: list[CursorReport] = []
+    for spec, blob, frames, image_count, written_sizes in planned:
         target = cursors_dir / spec.canonical
-        target.write_bytes(blob)
-        _selfcheck(target, blob, len(images))
+        # 规范名必须是普通文件：若是软链，就地写入会以本进程身份覆写链接目标，
+        # 而且随后的 _selfcheck 会沿同一路径回读，护栏形同虚设。
+        if target.is_symlink():
+            raise ThemeError(f"{target} 是符号链接，拒绝写入（可能被重定向到别处）")
+        _write_atomic(target, blob)
+        _selfcheck(target, blob, image_count)
 
         aliases = tuple(sorted(spec.aliases))
         for alias in aliases:
@@ -153,8 +173,8 @@ def build_theme(
                 canonical=spec.canonical,
                 source=spec.source,
                 windows_role=spec.windows_role,
-                frames=len(cursor.steps),
-                sizes=tuple(sorted(written_sizes)),
+                frames=frames,
+                sizes=written_sizes,
                 bytes_written=len(blob),
                 aliases=aliases,
             )
@@ -173,6 +193,17 @@ def build_theme(
 def _validate_name(name: str) -> None:
     if not name or "/" in name or name in {".", ".."}:
         raise ThemeError(f"非法的光标名：{name!r}")
+
+
+def _write_atomic(path: Path, data: bytes) -> None:
+    """同目录临时文件 + ``os.replace``：不跟随符号链接，也不会留下半截文件。"""
+    tmp = path.with_name(f".{path.name}.tmp")
+    try:
+        tmp.write_bytes(data)
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def _selfcheck(path: Path, expected: bytes, images: int) -> None:
