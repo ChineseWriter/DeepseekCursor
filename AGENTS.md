@@ -120,7 +120,7 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 ├── src/bigfatfish/               # 源码：ani.py / xcursor.py / theme.py / __main__.py
 ├── scripts/install-theme.sh      # 安装脚本（默认 dry-run，写入 $HOME 属 R5 管辖）
 ├── tests/                        # stdlib unittest；含独立 XCursor/ANI 交叉校验器
-├── assets/                       # 上游光标素材（**不入库**，仅本地）
+├── assets/                       # **唯一的本地素材区**（不入库）：原始压缩包 + 解包结果
 └── themes/                       # 生成的主题（**不入库**，仅本地）
 ```
 
@@ -130,17 +130,17 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 
 ```bash
 # 测试（当前唯一必需的校验；零第三方依赖，无需安装任何包）
-UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m unittest discover -s tests -v
+PYTHONPATH=src uv run python -m unittest discover -s tests -v
 
 # 端到端构建（产出 themes/BigFatFish）
-UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m bigfatfish build
+PYTHONPATH=src uv run python -m bigfatfish build
 
 # 引入 ruff 之后再补：uv run ruff check . && uv run ruff format --check .
 ```
 
 三点说明：
 
-- `UV_CACHE_DIR` 指向工作区内，避免 uv 写 `$HOME/.cache/uv`（R5：能不动工作区外就不动）。
+- uv 用**它自己的缓存**（`~/.cache/uv`），不在仓库里堆积缓存文件；只有当环境不允许写 `$HOME`（例如只读沙箱）时，才临时加 `UV_CACHE_DIR="$PWD/.uv-cache"`（该目录已被 `.gitignore` 拦截）。
 - `uv` 若不在 `PATH`（例如只装在 `~/.local/bin`），用 `UV=$(command -v uv || echo "$HOME/.local/bin/uv")` 取路径。
 - `PYTHONPATH=src` 是必要的：`pyproject.toml` 设了 `package = false`（零依赖、不引入打包后端），源码目录不会自动进 `sys.path`。
 
@@ -162,7 +162,7 @@ UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m bigfatfish build
 - [x] **安装测试已完成并经用户确认**：动效、热点、清晰度均正常。安装与回滚流程见 `scripts/install-theme.sh`（默认 dry-run，R5 管辖）。
 - [ ] 清晰度取决于**显示缩放与素材原生档的匹配**：需求像素超出最大原生档时，合成器只能拉伸。调优方法与公式见 [themes/README.md](themes/README.md)；**具体机器的缩放值等参数一律不入库（R3）**。
 - [ ] 若要在更大尺寸下保持清晰，必须取得**比现有素材更大分辨率**的原始素材（线索见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6）。插值放大不增加真实细节，默认不做（R4）。
-- [ ] 上游素材压缩包 `大肥鱼.zip` 定为**不入库**（合规结论，见 §8 与 [THIRD-PARTY.md](THIRD-PARTY.md)），仅本地个人使用。
+- [ ] 上游素材压缩包 `assets/大肥鱼.zip`（已收敛进 `assets/`）定为**不入库**（合规结论，见 §8 与 [THIRD-PARTY.md](THIRD-PARTY.md)），仅本地个人使用。
 - [ ] 上游再分发许可待获取：联络要点见 [THIRD-PARTY.md](THIRD-PARTY.md) §3，待核实项见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6。
 - [ ] ruff 尚未引入；引入后补进 §4 校验链。
 
@@ -202,7 +202,7 @@ UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src uv run python -m bigfatfish build
    - 文档 / 配置：`<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->`（按其语法选注释符）
    - 版权行统一写 `Copyright (C) 2026 BigFatFish contributors`，不得写真实姓名。
    - **例外**：[LICENSE](LICENSE) 与 [LICENSE-CC-BY-NC-SA-4.0](LICENSE-CC-BY-NC-SA-4.0) 是许可证**逐字原文**，不得加头、不得改动一个字。
-2. **上游素材及其派生图像不得入库**：`.gitignore` 已拦截 `*.ani`、`*.cur`、`/大肥鱼.zip`、`assets/*`、`themes/*`。禁止用 `git add -f` 绕过；解除拦截的唯一条件是取得上游书面许可并登记入 [THIRD-PARTY.md](THIRD-PARTY.md)。
+2. **上游素材及其派生图像不得入库**：`.gitignore` 已拦截 `assets/*`（含原始压缩包与解包结果）、`*.ani`、`*.cur`、`themes/*`。禁止用 `git add -f` 绕过；解除拦截的唯一条件是取得上游书面许可并登记入 [THIRD-PARTY.md](THIRD-PARTY.md)。
 3. **不得声称本项目或产物的任何部分可商用。**
 4. **署名不可移除或篡改**；对外分发必须原样携带 [THIRD-PARTY.md](THIRD-PARTY.md) §4 的署名声明。
 5. 文档中**不得内嵌上游美术截图**——那等同于再分发。

@@ -76,7 +76,7 @@
 UV=$(command -v uv || echo "$HOME/.local/bin/uv")
 
 # 素材解包到本地（assets/ 不入库）
-unzip 大肥鱼.zip -d assets/
+unzip assets/大肥鱼.zip -d assets/
 
 # 构建主题 -> themes/BigFatFish/（11 个光标 + 34 个软链别名）
 UV_CACHE_DIR="$PWD/.uv-cache" PYTHONPATH=src "$UV" run python -m bigfatfish build

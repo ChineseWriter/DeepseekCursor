@@ -43,7 +43,7 @@ tmp/
 
 # ---- 上游素材与派生产物：权属见 THIRD-PARTY.md，未经许可不得入库 ----
 # 解除拦截的唯一条件：取得上游书面许可并记入 THIRD-PARTY.md
-/大肥鱼.zip
+# 本地素材统一收敛在 assets/（原始压缩包 + 解包结果），/assets/* 已覆盖
 *.ani
 *.cur
 /assets/*
