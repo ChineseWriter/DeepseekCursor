@@ -43,10 +43,23 @@ tmp/
 
 # ---- 上游素材与派生产物：权属见 THIRD-PARTY.md，未经许可不得入库 ----
 # 解除拦截的唯一条件：取得上游书面许可并记入 THIRD-PARTY.md
-# 本地素材统一收敛在 assets/（原始压缩包 + 解包结果），/assets/* 已覆盖
+# 本地素材统一收敛在 assets/；下面同时拦住"误落在仓库根目录"的同名文件，
+# 否则一次误下载 + git add 就会把明确禁止再分发的第三方素材写进历史。
 *.ani
 *.cur
+/*.zip
+/*.inf
+/*.bat
+/大肥鱼.zip
 /assets/*
 !/assets/README.md
 /themes/*
 !/themes/README.md
+
+# ---- 本机配置文件与残留（R3：这类文件是本机参数泄露的常见来源）----
+monitors.xml
+*.bak
+*.orig
+*.rej
+*~
+#*#
