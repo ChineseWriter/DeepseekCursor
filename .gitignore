@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
+# Copyright (C) 2026 BigFatFish contributors
+
 # ---- Python / uv ----
 .venv/
 __pycache__/
@@ -33,3 +36,13 @@ Thumbs.db
 *.tmp
 tmp/
 .cache/
+
+# ---- 上游素材与派生产物：权属见 THIRD-PARTY.md，未经许可不得入库 ----
+# 解除拦截的唯一条件：取得上游书面许可并记入 THIRD-PARTY.md
+/大肥鱼.zip
+*.ani
+*.cur
+/assets/*
+!/assets/README.md
+/themes/*
+!/themes/README.md
