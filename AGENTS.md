@@ -80,6 +80,7 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
    git diff --cached
    git grep -nEi '/home/[^/]*/|machine-id|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|([0-9]{1,3}\.){3}[0-9]{1,3}'
    ```
+   **还有一条机器查不出来，必须人工确认**：diff / 提交信息里是否出现"来自本机命令输出的数值或枚举"——显示缩放、分辨率、尺寸档位、路径字符串、主机与设备名。这类值是**裸数字**，上面的正则会全部放过（本仓库曾因此让一个本机显示缩放值进入历史，事后只能靠重写清除）。
 6. 本文件自身也不得写入任何真实系统信息：描述运行环境时只写 "Ubuntu 26.04 / Wayland" 这类通用事实。
 7. 一旦发现泄漏：先修正文件内容，再评估是否必须重写历史（内容已进入历史时，只改文件是不够的）；凭据类泄漏一律按"已泄露"处理，先轮换再清理。
 
@@ -118,7 +119,8 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 ├── pyproject.toml                # uv 项目定义（依赖唯一来源；零第三方依赖）
 ├── uv.lock                       # 锁文件，必须提交
 ├── src/bigfatfish/               # 源码：ani.py / xcursor.py / theme.py / __main__.py
-├── scripts/install-theme.sh      # 安装脚本（默认 dry-run，写入 $HOME 属 R5 管辖）
+├── scripts/install-theme.sh      # 安装主题（默认 dry-run，写入 $HOME 属 R5 管辖）
+├── scripts/set-cursor-size.sh    # 调光标尺寸（默认只读预览；写 gsettings 与 environment.d）
 ├── tests/                        # stdlib unittest；含独立 XCursor/ANI 交叉校验器
 ├── assets/                       # **唯一的本地素材区**（不入库）：原始压缩包 + 解包结果
 └── themes/                       # 生成的主题（**不入库**，仅本地）
@@ -201,7 +203,7 @@ PYTHONPATH=src uv run python -m bigfatfish build
    - Python / 代码：`# SPDX-License-Identifier: AGPL-3.0-or-later`
    - 文档 / 配置：`<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->`（按其语法选注释符）
    - 版权行统一写 `Copyright (C) 2026 BigFatFish contributors`，不得写真实姓名。
-   - **例外**：[LICENSE](LICENSE) 与 [LICENSE-CC-BY-NC-SA-4.0](LICENSE-CC-BY-NC-SA-4.0) 是许可证**逐字原文**，不得加头、不得改动一个字。
+   - **例外**：[LICENSE](LICENSE) 与 [LICENSE-CC-BY-NC-SA-4.0](LICENSE-CC-BY-NC-SA-4.0) 是许可证**逐字原文**，不得加头、不得改动一个字；`uv.lock` 是工具生成的锁文件（R2 禁止手工编辑），同样不加头。
 2. **上游素材及其派生图像不得入库**：`.gitignore` 已拦截 `assets/*`（含原始压缩包与解包结果）、`*.ani`、`*.cur`、`themes/*`。禁止用 `git add -f` 绕过；解除拦截的唯一条件是取得上游书面许可并登记入 [THIRD-PARTY.md](THIRD-PARTY.md)。
 3. **不得声称本项目或产物的任何部分可商用。**
 4. **署名不可移除或篡改**；对外分发必须原样携带 [THIRD-PARTY.md](THIRD-PARTY.md) §4 的署名声明。
