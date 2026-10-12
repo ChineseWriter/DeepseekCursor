@@ -1,0 +1,124 @@
+# AGENTS.md
+
+本文件是本项目的最高协作规约，适用于所有在此仓库中工作的人与 AI Agent。
+Agent 在开始任何任务前必须先读完本文件；与本文件冲突的临时说法，只有用户本人可以推翻。
+
+---
+
+## 1. 项目定位
+
+**BigFatFish（大肥鱼）光标主题 · Ubuntu 26.04 / Wayland 移植**
+
+- 上游素材：Windows 动画光标主题包（`.ani` 动画光标 + `install.inf` 安装描述）。
+- 目标平台：Ubuntu 26.04 LTS，**Wayland** 会话（GNOME / KDE 等合成器）。
+- 交付物：可在 Wayland 下直接使用的 Linux 光标主题（XCursor 目录结构 + 主题元数据），以及配套的转换 / 安装 / 校验工具。
+- 技术栈：Python（由 `uv` 管理）；核心工作是把 Windows 光标格式（`.ani` / `.cur` / `.ico`）转换为 XCursor 格式。
+
+> 上游是 Windows 专有格式，涉及多帧动画、帧速率、热点（hotspot）、多尺寸与回退链，**不要假设 1:1 直转**；Wayland 下光标由合成器加载，主题的 `index.theme` / `cursors/` 结构必须正确。
+
+---
+
+## 2. 硬性规则（HARD RULES，不可协商）
+
+### R1 — 一切改动走 Git
+
+1. 仓库使用 Git 管理，默认分支 `main`。
+2. 任何可交付改动都必须以提交形式进入历史；"改完不提交"不算交付。
+3. 提交信息使用 Conventional Commits：`<type>(<scope>): <summary>`，`type ∈ {feat, fix, docs, refactor, test, chore, build, perf, style}`。
+4. 一个提交只做一件事，可独立回滚；禁止把格式化、重命名与逻辑改动混在同一个提交里。
+5. 禁止对 `main` 或任何已被使用的分支 `git push --force`；禁止改写已推送的历史。
+6. 禁止 `git add -A` / `git add .` 盲加：先 `git status` 逐项确认，再显式列出路径，避免误提交密钥、本地环境文件与临时产物。
+7. 提交前必须跑通当前已存在的校验命令（见 §4）。
+8. Git 署名必须使用项目中性身份，**不得**用真实姓名或私人邮箱署名。
+
+### R2 — Python 生态一律使用 uv
+
+1. Python 解释器、依赖、虚拟环境、CLI 工具统一由 [`uv`](https://docs.astral.sh/uv/) 管理。
+2. 允许并推荐：
+   - `uv init` / `uv sync` / `uv lock` / `uv add` / `uv add --dev` / `uv remove`
+   - `uv run <cmd>`：执行脚本与项目内工具
+   - `uv python pin <version>`：固定解释器版本
+   - `uvx <tool>` / `uv tool run <tool>`：一次性 CLI 工具
+3. 禁止：
+   - `pip install` / `pip3 install` / `python -m pip ...` 直接装依赖
+   - `conda` / `poetry` / `pipenv` / `virtualenv`，或用 `requirements.txt` 作为依赖来源
+   - 手动 `python -m venv` 后激活安装
+   - 往系统 Python 里装东西（不得 `sudo pip`，不得改 `/usr/lib/python3*`）
+4. `pyproject.toml` 是依赖的唯一真实来源；`uv.lock` 必须提交进 Git，禁止手工编辑锁文件。
+5. `.venv/` 不进 Git（见 `.gitignore`）。
+6. 新增依赖必须说明用途；能用标准库或既有依赖解决的不加新依赖。
+7. 项目内所有 Python 命令都通过 `uv run` 执行，保证解释器与依赖版本一致。
+
+### R3 — 绝对禁止暴露真实系统信息与个人信息（最高优先级）
+
+本条优先于任何"方便调试"的做法。适用范围包括：仓库内容、提交历史、提交信息、Issue/PR、日志、报错输出、截图、测试固件、示例配置。
+
+**禁止出现的真实信息（非穷举）：**
+
+| 类别 | 禁止示例 |
+| --- | --- |
+| 身份 | 真实姓名、昵称、私人邮箱、手机号、社交账号、头像 |
+| 账号 / 凭据 | token、密码、API key、私钥、cookie、SSH 指纹、`.env` 内容 |
+| 主机标识 | 真实主机名、`machine-id`、磁盘或分区 UUID、硬件序列号、MAC 地址 |
+| 路径 | 含真实用户名的绝对路径（如 `/home/<真实用户名>/...`）、NAS / 共享盘路径 |
+| 网络 | 内网 IP、公网 IP、内网域名、公司或 VPN 域名、代理地址、路由器信息 |
+| 系统指纹 | `uname -a` / `lsb_release -a` / `dmesg` / `lspci` / `lsusb` / `ip a` 的原始输出，本机内核与发行版构建串、桌面环境私有配置路径 |
+
+**必须这样做：**
+
+1. 文档、脚本、测试中一律使用占位符：`$HOME`、`~`、`<user>`、`<host>`、`<distro-version>`、`example.com`、`example.invalid`、`sk-REDACTED`。
+2. 路径只写相对路径或 `$HOME` 展开形式，禁止硬编码任何绝对家目录路径。
+3. 需要引用命令输出时先脱敏：删掉主机名、用户名、IP、UUID、序列号后再入库；无法脱敏的就不要入库。
+4. 示例配置只提交 `.env.example` 这类占位版本；真实 `.env` 由 `.gitignore` 拦截。
+5. 提交前自检（任一命中即阻断，除非该行本身就是本条规约中的脱敏示例）：
+   ```bash
+   git diff --cached
+   git grep -nEi '/home/[^/]*/|machine-id|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|([0-9]{1,3}\.){3}[0-9]{1,3}'
+   ```
+6. 本文件自身也不得写入任何真实系统信息：描述运行环境时只写 "Ubuntu 26.04 / Wayland" 这类通用事实。
+7. 一旦发现泄漏：先修正文件内容，再评估是否必须重写历史（内容已进入历史时，只改文件是不够的）；凭据类泄漏一律按"已泄露"处理，先轮换再清理。
+
+> 判断标准：把内容贴给一个陌生人，他能否据此定位到具体的人或某台具体机器？能，就是违规。
+
+---
+
+## 3. 目录约定（随项目演进补充）
+
+```
+.
+├── AGENTS.md          # 本文件
+├── pyproject.toml     # uv 项目定义（依赖唯一来源）
+├── uv.lock            # 锁文件，必须提交
+├── src/               # Python 源码
+├── assets/            # 上游光标素材（解包后的 .ani / .inf）
+├── themes/            # 生成并维护的 XCursor 主题
+└── tests/             # 测试
+```
+
+目录按需创建；新增顶层目录时同步更新本节。
+
+## 4. 校验命令（提交前必跑）
+
+```bash
+uv run python -m compileall -q src
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest -q
+```
+
+工具尚未配置时，至少跑通当前已存在的部分；不得以"还没配"为由跳过已存在的检查。
+
+## 5. Agent 工作方式
+
+1. 先读本文件，再读代码；不猜项目约定。
+2. 动手前说明改什么、为什么；较大改动先给方案再执行。
+3. 不扩大范围：只改任务需要的文件，顺手重构单独提出。
+4. 不确定就问，不编造文件内容、命令结果或平台行为。
+5. 交付时说明：改了什么、怎么验证的、还有什么没验证。
+6. 新能力优先补测试与文档，而不是留"以后再说"。
+
+## 6. 已知待办（bootstrap）
+
+- [ ] 当前环境尚未安装 `uv`：执行 R2 前需先按官方方式安装。
+- [ ] Git 仓库已初始化并使用中性署名；上游素材压缩包目前未跟踪，待决定是否解包进 `assets/`。
+- [ ] ruff / pytest 等校验链随首个 Python 模块一并建立。

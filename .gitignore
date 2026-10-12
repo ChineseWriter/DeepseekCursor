@@ -1,0 +1,35 @@
+# ---- Python / uv ----
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ---- 本地敏感信息（R3：绝不入库）----
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+*.key
+secrets/
+credentials*
+
+# ---- 编辑器 / 系统噪音 ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- 临时产物 ----
+*.log
+*.tmp
+tmp/
+.cache/
