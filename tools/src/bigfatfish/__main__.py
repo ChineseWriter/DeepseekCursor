@@ -6,14 +6,18 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from . import __version__
 from .ani import AniError
 from .theme import CURSORS, THEME_NAME, ThemeError, build_theme
 from .xcursor import XcursorError
 
-DEFAULT_ASSETS = "assets/BigFatFish"
-DEFAULT_OUT = f"themes/{THEME_NAME}"
+#: 本工具位于 <repo>/tools/ 下。默认路径按仓库根目录解析，
+#: 这样在任何工作目录下运行都不需要额外参数（仍可用 --assets/--out 覆盖）。
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_ASSETS = str(_REPO_ROOT / "assets" / "BigFatFish")
+DEFAULT_OUT = str(_REPO_ROOT / THEME_NAME)
 
 
 def _parse_sizes(text: str) -> tuple[int, ...]:

@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bigfatfish.theme import CURSORS, THEME_NAME, ThemeError, build_theme  # noqa: E402
 from _xcur_ref import frames_of, parse  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "assets" / "BigFatFish"
 
 EXPECTED_FRAMES = {

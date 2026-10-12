@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bigfatfish.ani import AniError, parse_ico, read_ani  # noqa: E402
 from _ani_fixture import make_ani, make_dib, make_ico, solid_rgba  # noqa: E402
 
-ASSETS = Path(__file__).resolve().parents[1] / "assets" / "BigFatFish"
+ASSETS = Path(__file__).resolve().parents[2] / "assets" / "BigFatFish"
 
 #: install.inf 中声明的 11 个角色及其帧数（取自素材实测）
 EXPECTED = {

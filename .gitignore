@@ -41,10 +41,9 @@ tmp/
 .uv-cache/
 .local/
 
-# ---- 上游素材与派生产物：权属见 THIRD-PARTY.md，未经许可不得入库 ----
-# 解除拦截的唯一条件：取得上游书面许可并记入 THIRD-PARTY.md
-# 本地素材统一收敛在 assets/；下面同时拦住"误落在仓库根目录"的同名文件，
-# 否则一次误下载 + git add 就会把明确禁止再分发的第三方素材写进历史。
+# ---- 分层策略（依据见 ATTRIBUTION.md / THIRD-PARTY.md）----
+# 已入库：BigFatFish/ —— 转换后的 XCursor 主题，按 CC BY-NC-SA 4.0 分发（带完整署名）
+# 不入库：Windows 原始素材（.ani / .cur 与安装包文件）以及 assets/ 下的解包结果
 *.ani
 *.cur
 /*.zip
@@ -53,8 +52,6 @@ tmp/
 /大肥鱼.zip
 /assets/*
 !/assets/README.md
-/themes/*
-!/themes/README.md
 
 # ---- 本机配置文件与残留（R3：这类文件是本机参数泄露的常见来源）----
 monitors.xml

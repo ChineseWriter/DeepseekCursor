@@ -7,7 +7,7 @@
 # 原理：合成器按 `需求像素 = round(逻辑尺寸 × 显示器缩放)` 取图。若该需求不落在
 # 主题的原生像素档上，它只能拉伸现有档，于是发虚。所以清晰档位满足
 # `逻辑尺寸 ≈ 原生档 ÷ 缩放`；在此前提下再取尽可能大的档。
-# 推导与实测方法见 themes/README.md。
+# 推导与实测方法见 docs/TECH-NOTES.md。
 #
 # ⚠️ 本脚本会写入**工作区之外**（AGENTS.md R5 管辖）：
 #     1) gsettings  org.gnome.desktop.interface cursor-size

@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 BigFatFish contributors
 #
-# 把构建好的主题安装到本机（per-user，不使用 sudo）。
+# 安装 / 卸载 BigFatFish 光标主题（用户级，不使用 sudo）。
 #
-# ⚠️ 本脚本会写入**工作区之外**的路径（默认 $XDG_DATA_HOME/icons）。
-#    按 AGENTS.md R5：动手前先看清楚它要改什么，并已获得用户同意。
-#    默认只打印计划，必须显式加 --yes 才会真正落盘。
+# ⚠️ 本脚本会写入**仓库之外**的路径（默认 $XDG_DATA_HOME/icons）。
+#    按 AGENTS.md R5：默认只打印计划，必须显式加 --yes 才会真正落盘。
 #
 # 安全护栏：覆盖或删除既有目录之前，先确认它确实是本主题
 # （存在 index.theme 且 Name=BigFatFish）。这样 `--target` 一旦写错，
@@ -16,8 +15,7 @@ set -euo pipefail
 
 THEME_NAME="BigFatFish"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-SOURCE_DIR="$REPO_ROOT/themes/$THEME_NAME"
+SOURCE_DIR="$SCRIPT_DIR/$THEME_NAME"
 TARGET_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons/$THEME_NAME"
 
 ACTION="install"
@@ -26,14 +24,18 @@ FORCE=0
 
 usage() {
   cat <<EOF
-用法: scripts/install-theme.sh [选项]
+用法: ./install.sh [选项]
 
 选项:
   --yes, -y       真正写入（不加则只打印计划）
-  --uninstall     卸载（默认是安装）
+  --uninstall     卸载，移入回收站（默认是安装）
   --target DIR    指定安装位置（默认 \${XDG_DATA_HOME:-\$HOME/.local/share}/icons/$THEME_NAME）
   --force         目标目录不是本主题时，仍允许覆盖 / 删除
   -h, --help      显示本帮助
+
+装完后启用（请自行确认后执行）：
+  gsettings set org.gnome.desktop.interface cursor-theme '$THEME_NAME'
+  # 之后注销并重新登录：Wayland 会缓存光标主题
 EOF
 }
 
@@ -55,7 +57,7 @@ done
 echo "动作      : $ACTION"
 echo "主题      : $THEME_NAME"
 echo "源目录    : $SOURCE_DIR"
-echo "目标目录  : $TARGET_DIR   （工作区之外，见 AGENTS.md R5）"
+echo "目标目录  : $TARGET_DIR   （仓库之外，见 AGENTS.md R5）"
 
 if [ "$CONFIRM" -ne 1 ]; then
   echo
@@ -65,7 +67,7 @@ fi
 
 case "$ACTION" in
   install)
-    [ -d "$SOURCE_DIR" ] || { echo "错误：$SOURCE_DIR 不存在，请先运行构建（见 README）" >&2; exit 1; }
+    [ -d "$SOURCE_DIR" ] || { echo "错误：$SOURCE_DIR 不存在（仓库内容不完整？）" >&2; exit 1; }
     mkdir -p "$(dirname -- "$TARGET_DIR")"
     if [ -e "$TARGET_DIR" ] && [ ! -d "$TARGET_DIR" ]; then
       echo "错误：$TARGET_DIR 已存在但不是目录，拒绝覆盖" >&2
@@ -87,10 +89,10 @@ case "$ACTION" in
     cp -a -- "$SOURCE_DIR" "$TARGET_DIR"
     echo "已安装：$TARGET_DIR"
     echo
-    echo "启用（按桌面环境选一条，需要你确认后再执行）："
-    echo "  GNOME : gsettings set org.gnome.desktop.interface cursor-theme '$THEME_NAME'"
-    echo "  KDE   : 系统设置 -> 外观 -> 光标 -> 选择 $THEME_NAME"
-    echo "  立即生效：注销并重新登录（Wayland 会缓存光标主题）"
+    echo "下一步（需你自己确认后执行）："
+    echo "  gsettings set org.gnome.desktop.interface cursor-theme '$THEME_NAME'"
+    echo "  然后注销并重新登录（Wayland 会缓存光标主题）"
+    echo "提示：若觉得光标偏小或发虚，见 README「光标大小与清晰度」一节。"
     ;;
   uninstall)
     if [ -d "$TARGET_DIR" ]; then
