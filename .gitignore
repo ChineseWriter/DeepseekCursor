@@ -37,6 +37,10 @@ Thumbs.db
 tmp/
 .cache/
 
+# ---- uv / python 本地状态（缓存刻意收进工作区，避免写 $HOME，见 AGENTS.md R5）----
+.uv-cache/
+.local/
+
 # ---- 上游素材与派生产物：权属见 THIRD-PARTY.md，未经许可不得入库 ----
 # 解除拦截的唯一条件：取得上游书面许可并记入 THIRD-PARTY.md
 /大肥鱼.zip

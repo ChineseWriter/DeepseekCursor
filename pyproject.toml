@@ -1,0 +1,12 @@
+[project]
+name = "bigfatfish"
+version = "0.1.0"
+description = "把 Windows 动画光标包 (.ani) 转换为 Ubuntu 26.04 / Wayland 可用的 XCursor 主题"
+requires-python = ">=3.11"
+dependencies = []
+
+# 刻意零依赖：只使用 Python 标准库。
+# 不用 build backend，避免 uv 同步时去下载打包后端；按 AGENTS.md R2 用：
+#   PYTHONPATH=src uv run python -m bigfatfish ...
+[tool.uv]
+package = false
