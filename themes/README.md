@@ -18,13 +18,30 @@
 
 ## 本机安装（个人使用）
 
+用仓库自带的安装脚本（默认 dry-run，写入 `$HOME` 属 AGENTS.md R5 管辖）：
+
 ```bash
-mkdir -p ~/.icons
-cp -r themes/<theme-name> ~/.icons/
-# Wayland 下由合成器读取；GNOME 可通过 gnome-tweaks 或 gsettings 选择光标主题
+scripts/install-theme.sh              # 只打印计划
+scripts/install-theme.sh --yes        # 装到 $XDG_DATA_HOME/icons（缺省 ~/.local/share/icons）
+gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
 ```
 
-> 具体安装命令随首个可用版本一并补充并实测。
+Wayland 会缓存光标主题，**注销并重新登录**后由合成器重新加载。
+
+## 实测结论（在 Ubuntu 26.04 / Wayland 上验证过）
+
+1. **`~/.local/share/icons/` 一个位置就够，不需要再往 `~/.icons/` 放软链。**
+   - `libwayland-cursor` 内置搜索路径含 `/icons`（拼接到 XDG 数据目录之后），实测能加载。
+   - `libXcursor` 实测也能从该目录加载。**注意**：它的 `XcursorLibraryPath()` 返回的字符串里
+     *看不到* 这个目录，但实际仍能解析 —— 所以**不要凭路径字符串判断可用性，要实测**。
+2. **加载器在主题缺失时会"回退到系统默认主题"并返回非 NULL，而不是报错。**
+   因此任何加载验证都必须校验内容（帧数 / 热点 / 延迟），只看"是否加载成功"会把
+   回退结果误判为成功。本项目验证时用帧数比对：`left_ptr`=23、`watch`=22、`hand2`=21。
+3. 验证可用的两个真实加载器入口（脚本化，非项目依赖）：
+   - `libXcursor.so.1` → `XcursorLibraryLoadImages(file, theme, size)`
+   - `libwayland-cursor.so.0` → `wl_cursor_theme_load(theme, size, shm)` + `wl_cursor_theme_get_cursor`
+     （需先用 `wl_proxy_marshal_flags` 取 `wl_shm`：Wayland ≥1.20 起 `wl_display_get_registry`
+     等请求函数已改为头文件内联，不再是导出符号）
 
 ## 何时可以解除拦截
 
