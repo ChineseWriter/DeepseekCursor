@@ -87,7 +87,6 @@ validate_native() {
   done
 }
 
-is_positive_number "$SCALE" || die "--scale 需要一个正数（如 1.25），收到：$SCALE"
 is_positive_number "$STRETCH_LIMIT" || die "--stretch 需要一个正数（如 1.20），收到：$STRETCH_LIMIT"
 validate_native
 
@@ -110,6 +109,8 @@ detect_scale() {
 }
 
 [ -n "$SCALE" ] || SCALE="$(detect_scale)"
+# 注意：必须在探测之后校验——否则未显式传 --scale 时会把空值当成错误
+is_positive_number "$SCALE" || die "--scale 需要一个正数（如 1.25），收到：$SCALE"
 
 # ---------- 档位表 ----------
 ladder() {
