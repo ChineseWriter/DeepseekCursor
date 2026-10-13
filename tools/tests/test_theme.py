@@ -11,11 +11,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from bigfatfish.theme import CURSORS, THEME_NAME, ThemeError, build_theme  # noqa: E402
+from bigfatfish.catalog import LEGACY_CURSORS as CURSORS  # noqa: E402
+from bigfatfish.catalog import theme_by_name  # noqa: E402
+from bigfatfish.theme import ThemeError, build_theme  # noqa: E402
 from _xcur_ref import frames_of, parse  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-ASSETS = ROOT / "assets" / "BigFatFish"
+SPEC = theme_by_name("BigFatFish")
+ASSETS = ROOT / "assets"
 
 EXPECTED_FRAMES = {
     "left_ptr": 23,
@@ -56,13 +59,13 @@ class SpecTests(unittest.TestCase):
 class BuildThemeTests(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self.out = Path(self._tmp.name) / THEME_NAME
+        self.out = Path(self._tmp.name) / SPEC.name
 
     def tearDown(self):
         self._tmp.cleanup()
 
     def test_builds_all_cursors_with_native_sizes(self):
-        report = build_theme(ASSETS, self.out)
+        report = build_theme(SPEC, ASSETS, self.out)
         self.assertEqual({c.canonical for c in report.cursors}, set(EXPECTED_FRAMES))
         for cursor in report.cursors:
             with self.subTest(cursor=cursor.canonical):
@@ -74,7 +77,7 @@ class BuildThemeTests(unittest.TestCase):
                 )
 
     def test_every_produced_file_is_a_valid_xcursor_with_matching_frame_count(self):
-        report = build_theme(ASSETS, self.out)
+        report = build_theme(SPEC, ASSETS, self.out)
         for cursor in report.cursors:
             with self.subTest(cursor=cursor.canonical):
                 parsed = parse((self.out / "cursors" / cursor.canonical).read_bytes())
@@ -87,7 +90,7 @@ class BuildThemeTests(unittest.TestCase):
                 self.assertEqual(first["delay"], 100)
 
     def test_symlinks_are_relative_and_resolve(self):
-        build_theme(ASSETS, self.out)
+        build_theme(SPEC, ASSETS, self.out)
         cursors_dir = self.out / "cursors"
         for spec in CURSORS:
             for alias in spec.aliases:
@@ -99,21 +102,21 @@ class BuildThemeTests(unittest.TestCase):
                     self.assertEqual(link.resolve().read_bytes(), (cursors_dir / spec.canonical).read_bytes())
 
     def test_index_theme_is_written(self):
-        build_theme(ASSETS, self.out)
+        build_theme(SPEC, ASSETS, self.out)
         text = (self.out / "index.theme").read_text(encoding="utf-8")
         self.assertIn("[Icon Theme]", text)
-        self.assertIn(f"Name={THEME_NAME}", text)
+        self.assertIn(f"Name={SPEC.name}", text)
 
     def test_size_filter_limits_output(self):
-        report = build_theme(ASSETS, self.out, sizes=(32,))
+        report = build_theme(SPEC, ASSETS, self.out, sizes=(32,))
         for cursor in report.cursors:
             self.assertEqual(cursor.sizes, (32,))
             parsed = parse((self.out / "cursors" / cursor.canonical).read_bytes())
             self.assertEqual(parsed["ntoc"], cursor.frames)
 
     def test_rebuild_is_idempotent(self):
-        first = build_theme(ASSETS, self.out)
-        second = build_theme(ASSETS, self.out)
+        first = build_theme(SPEC, ASSETS, self.out)
+        second = build_theme(SPEC, ASSETS, self.out)
         self.assertEqual(first.total_bytes, second.total_bytes)
         self.assertEqual(
             [c.bytes_written for c in first.cursors], [c.bytes_written for c in second.cursors]
@@ -123,13 +126,13 @@ class BuildThemeTests(unittest.TestCase):
         self.out.mkdir(parents=True)
         (self.out / "someone-elses-file.txt").write_text("别删我", encoding="utf-8")
         with self.assertRaises(ThemeError):
-            build_theme(ASSETS, self.out)
+            build_theme(SPEC, ASSETS, self.out)
         self.assertTrue((self.out / "someone-elses-file.txt").exists(), "护栏不得删除外来文件")
 
     def test_force_allows_foreign_directory(self):
         self.out.mkdir(parents=True)
         (self.out / "someone-elses-file.txt").write_text("别删我", encoding="utf-8")
-        report = build_theme(ASSETS, self.out, force=True)
+        report = build_theme(SPEC, ASSETS, self.out, force=True)
         self.assertEqual(len(report.cursors), 11)
         self.assertTrue((self.out / "someone-elses-file.txt").exists())
 
@@ -142,7 +145,7 @@ class BuildThemeTests(unittest.TestCase):
         (cursors / "left_ptr").symlink_to(victim)
 
         with self.assertRaises(ThemeError):
-            build_theme(ASSETS, self.out)
+            build_theme(SPEC, ASSETS, self.out)
         self.assertEqual(victim.read_text(encoding="utf-8"), "original")
 
     def test_refuses_symlinked_cursors_dir(self):
@@ -150,16 +153,16 @@ class BuildThemeTests(unittest.TestCase):
         elsewhere = Path(self._tmp.name) / "elsewhere"
         elsewhere.mkdir()
         self.out.mkdir()
-        (self.out / "index.theme").write_text(f"Name={THEME_NAME}\n", encoding="utf-8")
+        (self.out / "index.theme").write_text(f"Name={SPEC.name}\n", encoding="utf-8")
         (self.out / "cursors").symlink_to(elsewhere, target_is_directory=True)
 
         with self.assertRaises(ThemeError):
-            build_theme(ASSETS, self.out)
+            build_theme(SPEC, ASSETS, self.out)
         self.assertEqual(list(elsewhere.iterdir()), [])
 
     def test_missing_assets_raises(self):
         with self.assertRaises(ThemeError):
-            build_theme(ROOT / "assets" / "nonexistent", self.out)
+            build_theme(SPEC, ROOT / "assets" / "nonexistent", self.out)
 
 
 if __name__ == "__main__":

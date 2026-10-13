@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2026 BigFatFish contributors
-"""把 .ani 素材组装成一个 XCursor 主题目录。
+"""把 .ani 素材组装成 XCursor 主题目录。
 
-角色映射来自素材自带的 ``install.inf``（Windows 光标角色 -> .ani 文件），
-再翻译成 X11/XCursor 通用名字；未在 ``install.inf`` 中出现的角色一律不臆造。
+素材布局与角色映射由 :mod:`bigfatfish.catalog` 的 :class:`~bigfatfish.catalog.ThemeSpec`
+描述；本模块只负责构建与护栏：不臆造素材里没有的角色、尺寸或动画。
 """
 
 from __future__ import annotations
@@ -13,61 +13,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import xcursor
-from .ani import read_ani_file
-
-THEME_NAME = "BigFatFish"
-THEME_COMMENT = "大肥鱼 / BigFatFish 全动态光标主题（由 .ani 转换）"
+from .ani import AnimatedCursor, read_ani_file
+from .catalog import CursorSpec, ThemeSpec
 
 
 class ThemeError(ValueError):
     """素材或输出目录不满足构建条件。"""
-
-
-@dataclass(frozen=True)
-class CursorSpec:
-    """一个角色的映射：源 .ani 文件 -> XCursor 主名 + 别名（软链）。"""
-
-    source: str
-    canonical: str
-    windows_role: str
-    aliases: tuple[str, ...] = ()
-
-
-#: 依据 install.inf 的权威映射（Arrow/AppStarting/Wait/crosshair+precisionhair/
-#: IBeam/SizeNS/SizeWE/SizeNWSE/SizeNESW/Grab+SizeAll/Hand）。
-CURSORS: tuple[CursorSpec, ...] = (
-    CursorSpec("pointer.ani", "left_ptr", "Arrow", ("default", "arrow", "top_left_arrow", "left-arrow")),
-    CursorSpec("work.ani", "left_ptr_watch", "AppStarting", ("progress", "half-busy")),
-    CursorSpec("busy.ani", "watch", "Wait", ("wait", "busy")),
-    CursorSpec("cross.ani", "crosshair", "crosshair/precisionhair", ("cross", "tcross")),
-    CursorSpec("text.ani", "text", "IBeam", ("xterm", "ibeam")),
-    CursorSpec("move.ani", "fleur", "Grab/SizeAll", ("move", "size_all", "all-scroll", "grabbing")),
-    CursorSpec("link.ani", "hand2", "Hand", ("pointer", "hand", "hand1", "pointing_hand")),
-    CursorSpec(
-        "vert.ani",
-        "sb_v_double_arrow",
-        "SizeNS",
-        ("size_ver", "ns-resize", "v_double_arrow", "row-resize"),
-    ),
-    CursorSpec(
-        "horz.ani",
-        "sb_h_double_arrow",
-        "SizeWE",
-        ("size_hor", "ew-resize", "h_double_arrow", "col-resize"),
-    ),
-    CursorSpec(
-        "dgn1.ani",
-        "size_fdiag",
-        "SizeNWSE",
-        ("nwse-resize", "top_left_corner", "bottom_right_corner"),
-    ),
-    CursorSpec(
-        "dgn2.ani",
-        "size_bdiag",
-        "SizeNESW",
-        ("nesw-resize", "top_right_corner", "bottom_left_corner"),
-    ),
-)
 
 
 @dataclass(frozen=True)
@@ -83,6 +34,7 @@ class CursorReport:
 
 @dataclass(frozen=True)
 class BuildReport:
+    name: str
     out_dir: Path
     cursors: tuple[CursorReport, ...]
 
@@ -90,58 +42,121 @@ class BuildReport:
     def total_bytes(self) -> int:
         return sum(c.bytes_written for c in self.cursors)
 
+    @property
+    def alias_count(self) -> int:
+        return sum(len(c.aliases) for c in self.cursors)
+
+
+def _path_for(spec: ThemeSpec, assets_root: Path, cursor: CursorSpec, size: int | None) -> Path:
+    return assets_root / spec.pattern.format(source=cursor.source, size=size)
+
+
+def _images_for(cursor: AnimatedCursor, sizes: tuple[int, ...]) -> list[xcursor.XImage]:
+    """取出指定标称尺寸的全部帧，保持素材里的帧序（不做任何缩放）。"""
+    images: list[xcursor.XImage] = []
+    for step in cursor.steps:
+        for frame in step.frames:
+            nominal = max(frame.width, frame.height)
+            if nominal in sizes:
+                images.append(xcursor.image_from_frame(frame, nominal, step.delay_ms))
+    return images
+
+
+def _missing_assets(
+    spec: ThemeSpec, assets_root: Path, sizes: tuple[int, ...]
+) -> list[str]:
+    """列出缺失的素材文件（相对 assets 根，便于给出可执行的提示）。"""
+    missing: list[str] = []
+    per_size = "{size}" in spec.pattern
+    for cursor in spec.cursors:
+        if per_size:
+            for size in sizes:
+                path = _path_for(spec, assets_root, cursor, size)
+                if not path.is_file():
+                    missing.append(f"{path.relative_to(assets_root)}")
+        else:
+            path = _path_for(spec, assets_root, cursor, None)
+            if not path.is_file():
+                missing.append(f"{path.relative_to(assets_root)}")
+    return missing
+
 
 def build_theme(
-    asset_dir: str | Path,
+    spec: ThemeSpec,
+    assets_root: str | Path,
     out_dir: str | Path,
     sizes: tuple[int, ...] | None = None,
     force: bool = False,
 ) -> BuildReport:
     """构建主题目录：``<out>/index.theme`` + ``<out>/cursors/<name>``。
 
-    ``sizes`` 为 ``None`` 时使用素材自带的全部标称尺寸（本项目为 32/48/64），
-    不做任何放大或缩小，避免引入伪造像素。
+    ``sizes`` 为 ``None`` 时使用主题自带的**入库档位**（合集为 32/48/64）；
+    显式传入可在素材具备时额外构建 128/256 等更大档。任何档位都不做插值放大。
     """
-    asset_dir = Path(asset_dir)
+    assets_root = Path(assets_root)
     out_dir = Path(out_dir)
 
-    if not asset_dir.is_dir():
-        raise ThemeError(f"素材目录不存在：{asset_dir}")
+    if not assets_root.is_dir():
+        raise ThemeError(f"素材根目录不存在：{assets_root}")
 
-    missing = [spec.source for spec in CURSORS if not (asset_dir / spec.source).is_file()]
+    use_sizes = tuple(sorted(set(spec.sizes if sizes is None else sizes)))
+    if not use_sizes:
+        raise ThemeError("没有要输出的尺寸")
+
+    missing = _missing_assets(spec, assets_root, use_sizes)
     if missing:
-        raise ThemeError("素材目录缺少文件：" + ", ".join(missing))
+        shown = "、".join(missing[:3])
+        more = f" 等共 {len(missing)} 个" if len(missing) > 3 else ""
+        raise ThemeError(
+            f"{spec.name}：素材缺少文件 {shown}{more}"
+            "（更小的档位可能尚未按需拉取，见 docs/PROVENANCE.md）"
+        )
 
     if out_dir.is_symlink():
         raise ThemeError(f"{out_dir} 是符号链接，拒绝写入（可能被重定向到别处）")
-    if out_dir.exists() and any(out_dir.iterdir()) and not force and not _is_our_theme(out_dir):
+    if (
+        out_dir.exists()
+        and any(out_dir.iterdir())
+        and not force
+        and not _is_our_theme(out_dir, spec.name)
+    ):
         raise ThemeError(f"{out_dir} 已存在且不是本工具生成的主题；确认覆盖请加 --force")
+
+    per_size = "{size}" in spec.pattern
 
     # 先全部解析并编码，再统一落盘：任一素材有问题时不会留下新旧混合的半成品
     planned: list[tuple[CursorSpec, bytes, int, int, tuple[int, ...]]] = []
-    for spec in CURSORS:
-        _validate_name(spec.canonical)
-        cursor = read_ani_file(asset_dir / spec.source)
+    for cursor in spec.cursors:
+        _validate_name(cursor.canonical)
 
         images: list[xcursor.XImage] = []
-        written_sizes: set[int] = set()
-        for step in cursor.steps:
-            for frame in step.frames:
-                nominal = max(frame.width, frame.height)
-                if sizes is not None and nominal not in sizes:
-                    continue
-                images.append(xcursor.image_from_frame(frame, nominal, step.delay_ms))
-                written_sizes.add(nominal)
-        if not images:
-            raise ThemeError(f"{spec.source}：没有匹配尺寸 {sizes} 的帧")
+        frame_counts: set[int] = set()
+        if per_size:
+            for size in use_sizes:
+                parsed = read_ani_file(_path_for(spec, assets_root, cursor, size))
+                frame_counts.add(len(parsed.steps))
+                images.extend(_images_for(parsed, (size,)))
+        else:
+            parsed = read_ani_file(_path_for(spec, assets_root, cursor, None))
+            frame_counts.add(len(parsed.steps))
+            images.extend(_images_for(parsed, use_sizes))
 
+        if len(frame_counts) != 1:
+            # 各档帧数不同则动画无法逐帧对齐：宁可报错，也不静默凑一个长度
+            raise ThemeError(
+                f"{cursor.source}：各档帧数不一致 {sorted(frame_counts)}，动画无法对齐"
+            )
+        if not images:
+            raise ThemeError(f"{cursor.source}：没有匹配尺寸 {use_sizes} 的帧")
+
+        written_sizes = tuple(sorted({image.nominal for image in images}))
         planned.append(
             (
-                spec,
+                cursor,
                 xcursor.build(images),
-                len(cursor.steps),
+                frame_counts.pop(),
                 len(images),
-                tuple(sorted(written_sizes)),
+                written_sizes,
             )
         )
 
@@ -151,8 +166,8 @@ def build_theme(
     cursors_dir.mkdir(parents=True, exist_ok=True)
 
     reports: list[CursorReport] = []
-    for spec, blob, frames, image_count, written_sizes in planned:
-        target = cursors_dir / spec.canonical
+    for cursor, blob, frames, image_count, written_sizes in planned:
+        target = cursors_dir / cursor.canonical
         # 规范名必须是普通文件：若是软链，就地写入会以本进程身份覆写链接目标，
         # 而且随后的 _selfcheck 会沿同一路径回读，护栏形同虚设。
         if target.is_symlink():
@@ -160,19 +175,19 @@ def build_theme(
         _write_atomic(target, blob)
         _selfcheck(target, blob, image_count)
 
-        aliases = tuple(sorted(spec.aliases))
+        aliases = tuple(sorted(cursor.aliases))
         for alias in aliases:
             _validate_name(alias)
             link = cursors_dir / alias
             if link.is_symlink() or link.exists():
                 link.unlink()
-            os.symlink(spec.canonical, link)  # 相对软链，主题目录可整体搬移
+            os.symlink(cursor.canonical, link)  # 相对软链，主题目录可整体搬移
 
         reports.append(
             CursorReport(
-                canonical=spec.canonical,
-                source=spec.source,
-                windows_role=spec.windows_role,
+                canonical=cursor.canonical,
+                source=cursor.source,
+                windows_role=cursor.windows_role,
                 frames=frames,
                 sizes=written_sizes,
                 bytes_written=len(blob),
@@ -182,12 +197,12 @@ def build_theme(
 
     (out_dir / "index.theme").write_text(
         "[Icon Theme]\n"
-        f"Name={THEME_NAME}\n"
-        f"Comment={THEME_COMMENT}\n",
+        f"Name={spec.name}\n"
+        f"Comment={spec.comment}\n",
         encoding="utf-8",
     )
 
-    return BuildReport(out_dir=out_dir, cursors=tuple(reports))
+    return BuildReport(name=spec.name, out_dir=out_dir, cursors=tuple(reports))
 
 
 def _validate_name(name: str) -> None:
@@ -220,11 +235,11 @@ def _selfcheck(path: Path, expected: bytes, images: int) -> None:
         raise ThemeError(f"写入校验失败（TOC {ntoc} != 图像 {images}）：{path}")
 
 
-def _is_our_theme(out_dir: Path) -> bool:
+def _is_our_theme(out_dir: Path, name: str) -> bool:
     index = out_dir / "index.theme"
     if not index.is_file():
         return False
     try:
-        return f"Name={THEME_NAME}" in index.read_text(encoding="utf-8")
+        return f"Name={name}" in index.read_text(encoding="utf-8")
     except OSError:
         return False
