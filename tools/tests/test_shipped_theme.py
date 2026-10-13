@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from _xcur_ref import frames_of, parse  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-THEME = REPO_ROOT / "BigFatFish"
+THEME = REPO_ROOT / "themes" / "BigFatFish"
 CURSORS = THEME / "cursors"
 
 #: 每个光标在 64 标称档下的帧数（与 tools/src 的构建结果一致）

@@ -22,8 +22,9 @@
 ⚠️ 会写入 `$HOME`（`$XDG_DATA_HOME/icons`），属 [AGENTS.md](AGENTS.md) **R5** 管辖：**默认只打印计划，加 `--yes` 才真正落盘**。
 
 ```bash
-./install.sh                 # 预览：只打印将要做什么
-./install.sh --yes           # 安装到 ~/.local/share/icons/BigFatFish
+./install.sh --list                  # 看仓库里有哪些主题
+./install.sh                          # 预览：只打印将要做什么
+./install.sh --theme BigFatFish --yes # 安装到 ~/.local/share/icons/BigFatFish
 
 gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
 # 然后注销并重新登录（Wayland 会缓存光标主题）
@@ -32,7 +33,7 @@ gsettings set org.gnome.desktop.interface cursor-theme 'BigFatFish'
 卸载（移入回收站，可恢复）：
 
 ```bash
-./install.sh --uninstall --yes
+./install.sh --theme BigFatFish --uninstall --yes
 ```
 
 非 GNOME 桌面：在系统设置里选择 `BigFatFish` 即可（KDE：系统设置 → 外观 → 光标）。
@@ -74,7 +75,7 @@ tools/scripts/set-cursor-size.sh --reset --yes   # 恢复系统默认
 
 ```
 .
-├── BigFatFish/                   # 主题本体：index.theme + cursors/（11 光标 + 34 别名）
+├── themes/<主题名>/               # 主题本体：index.theme + cursors/（当前含 BigFatFish 等）
 ├── install.sh                    # 安装 / 卸载（默认 dry-run；写 $HOME 属 R5 管辖）
 ├── ATTRIBUTION.md                # 署名与许可（对外分发必须携带）
 ├── LICENSE                       # CC BY-NC-SA 4.0（主题美术与文档）
