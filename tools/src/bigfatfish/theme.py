@@ -207,7 +207,12 @@ def build_theme(
             )
         )
 
+    # 生成型配置文件也要带 SPDX 头（AGENTS.md §8.2.1）；key file 允许 `#` 注释，
+    # 已用 GLib 的 GKeyFile（GNOME 读 index.theme 的同一实现）实读验证。
     (out_dir / "index.theme").write_text(
+        "# SPDX-License-Identifier: CC-BY-NC-SA-4.0\n"
+        "# Copyright (C) 2026 BigFatFish contributors\n"
+        "# 主题美术的来源与许可义务见同目录 ATTRIBUTION.md\n"
         "[Icon Theme]\n"
         f"Name={spec.name}\n"
         f"Comment={spec.comment}\n",
