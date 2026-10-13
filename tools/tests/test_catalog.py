@@ -110,6 +110,23 @@ class CatalogTests(unittest.TestCase):
                 self.assertIs(spec.cursors, COLLECTION_CURSORS)
                 self.assertEqual(spec.sizes, (32, 48, 64))
 
+    def test_every_theme_declares_origin_and_license(self):
+        for spec in THEMES:
+            with self.subTest(theme=spec.name):
+                self.assertTrue(spec.title)
+                self.assertTrue(spec.license_id, "主题必须声明许可分组")
+                self.assertRegex(spec.video, r"^BV[0-9A-Za-z]+$", "来源视频号格式应为 BV…")
+                if spec.repo:
+                    self.assertRegex(spec.repo, r"^[\w.-]+/[\w.-]+$", "仓库应为 owner/name")
+                else:
+                    self.assertTrue(spec.note, "没有仓库的主题必须写明来源说明")
+
+    def test_license_ids_are_from_a_closed_set(self):
+        known = {"cc-by-nc-sa-4.0", "zipzip-nc", "yunyue-1.0", "unconfirmed"}
+        for spec in THEMES:
+            with self.subTest(theme=spec.name):
+                self.assertIn(spec.license_id, known)
+
     def test_theme_by_name_raises_for_unknown(self):
         with self.assertRaises(KeyError):
             theme_by_name("NoSuchTheme")

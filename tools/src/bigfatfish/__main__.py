@@ -50,16 +50,21 @@ def _print_report(report: BuildReport) -> None:
         f"完成：{report.name} —— {len(report.cursors)} 个光标，"
         f"{report.alias_count} 个别名，共 {report.total_bytes} 字节 -> {report.out_dir}"
     )
+    if report.preview_bytes:
+        width, height = report.preview_size
+        print(f"      预览图 preview.png：{width}x{height}，{report.preview_bytes} 字节")
 
 
 def _cmd_themes(_args: argparse.Namespace) -> int:
-    print(f"{'主题':<16}{'入库档位':<12}{'角色数':<8}来源")
+    print(f"{'主题':<16}{'入库档位':<12}{'角色数':<8}{'许可':<16}来源")
     for spec in THEMES:
+        source = f"https://github.com/{spec.repo}" if spec.repo else f"B 站 {spec.video}"
         print(
             f"{spec.name:<16}"
             f"{','.join(map(str, spec.sizes)):<12}"
             f"{len(spec.cursors):<8}"
-            f"{spec.origin}"
+            f"{spec.license_id:<16}"
+            f"{source}"
         )
     return 0
 
@@ -67,7 +72,8 @@ def _cmd_themes(_args: argparse.Namespace) -> int:
 def _cmd_list(args: argparse.Namespace) -> int:
     specs = [_pick_theme(args.theme)] if args.theme else list(THEMES)
     for spec in specs:
-        print(f"== {spec.name}  （{spec.origin or spec.pattern}）")
+        source = f"https://github.com/{spec.repo}" if spec.repo else f"B 站 {spec.video}"
+        print(f"== {spec.name}  （{spec.title}；{source}）")
         print(f"{'源文件':<18}{'XCursor 主名':<18}{'Windows 角色':<22}别名")
         for cursor in spec.cursors:
             print(

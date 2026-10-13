@@ -154,34 +154,47 @@ class ThemeSpec:
     """
 
     name: str
+    title: str
     comment: str
     out_dir: str
     pattern: str
     cursors: tuple[CursorSpec, ...]
+    license_id: str
     sizes: tuple[int, ...] = (32, 48, 64)
-    #: 来源标识（仓库 / 角色目录），供文档与排错核对；不参与构建。
-    origin: str = ""
+    #: 来源信息，用于署名文件与排错；不参与像素构建。
+    repo: str = ""
+    video: str = ""
+    note: str = ""
 
 
+#: 合集的 11 个仓库都属于同一发布者
+_UPSTREAM_OWNER = "nibushiyigeren123-bot"
 _COLLECTION_PATTERN = "src/{repo}/cursors/{char}/{size}/{source}"
 _COLLECTION_SIZES = (32, 48, 64)
 
 
 def _collection(
     name: str,
+    title: str,
     comment: str,
     repo: str,
     char: str,
-    origin: str = "",
+    video: str,
+    license_id: str,
+    note: str = "",
 ) -> ThemeSpec:
     return ThemeSpec(
         name=name,
+        title=title,
         comment=comment,
         out_dir=f"themes/{name}",
         pattern=_COLLECTION_PATTERN.format(repo=repo, char=char, size="{size}", source="{source}"),
         cursors=COLLECTION_CURSORS,
+        license_id=license_id,
         sizes=_COLLECTION_SIZES,
-        origin=origin or f"{repo} / cursors/{char}",
+        repo=f"{_UPSTREAM_OWNER}/{repo}",
+        video=video,
+        note=note,
     )
 
 
@@ -189,67 +202,158 @@ def _collection(
 THEMES: tuple[ThemeSpec, ...] = (
     ThemeSpec(
         name="BigFatFish",
+        title="大肥鱼 / 鲸鱼娘",
         comment="大肥鱼 / BigFatFish 全动态光标主题（由 .ani 转换）",
         out_dir="themes/BigFatFish",
         pattern="BigFatFish/{source}",
         cursors=LEGACY_CURSORS,
-        origin="BV1WypJ6WExu（UP 4evergr8）",
+        license_id="cc-by-nc-sa-4.0",
+        repo="",
+        video="BV1WypJ6WExu",
+        note="Windows 光标包由 B 站 UP 4evergr8 发布，视频页未附许可声明。",
     ),
     _collection(
         "ChatGPTDragon",
+        "ChatGPT 龙娘",
         "ChatGPT 龙娘 · 17 状态动态光标（社区二创）",
         "chatgpt-dragon-cursors",
         "chatgpt-dragon",
+        "BV1t2pZ6iEJ2",
+        "unconfirmed",
+        note="上游自述参考图署名 @光影随云飞，但明确表示原作者身份与授权范围尚未确认。",
     ),
     _collection(
         "ClaudeOpus",
+        "Claude 三姐妹 · Opus",
         "Claude 三姐妹 · Opus · 17 状态动态光标（社区二创）",
         "claude-sisters-cursors",
         "opus",
+        "BV1MGpD62EVE",
+        "zipzip-nc",
     ),
     _collection(
         "ClaudeSonnet",
+        "Claude 三姐妹 · Sonnet",
         "Claude 三姐妹 · Sonnet · 17 状态动态光标（社区二创）",
         "claude-sisters-cursors",
         "sonnet",
+        "BV1MGpD62EVE",
+        "zipzip-nc",
     ),
     _collection(
         "ClaudeFable",
+        "Claude 三姐妹 · Fable",
         "Claude 三姐妹 · Fable · 17 状态动态光标（社区二创）",
         "claude-sisters-cursors",
         "fable",
+        "BV1MGpD62EVE",
+        "zipzip-nc",
+        note="v1.0.1 按用户提供的全身图重做 Fable 形象，与 Opus 区分开。",
     ),
     _collection(
         "AstraMint",
+        "Astra（薄荷绿 GPT 姐妹 · 姐姐）",
         "Astra · 薄荷绿 · 17 状态动态光标（社区二创）",
         "astra-sol-mint-cursors",
         "astra",
+        "BV1iGpL6fELG",
+        "unconfirmed",
+        note="上游仓库未附素材许可文件，仅代码为 MIT；视频简介称角色形象为本地模型 Q 版重绘。",
     ),
     _collection(
         "SolMint",
+        "sol（薄荷绿 GPT 姐妹 · 妹妹）",
         "sol · 薄荷绿 · 17 状态动态光标（社区二创）",
         "astra-sol-mint-cursors",
         "sol",
+        "BV1iGpL6fELG",
+        "unconfirmed",
+        note="上游仓库未附素材许可文件，仅代码为 MIT；视频简介称角色形象为本地模型 Q 版重绘。",
     ),
     _collection(
         "DeepSeekWhale",
+        "DeepSeek 小鲸鱼",
         "DeepSeek 小鲸鱼 · 17 状态动态光标（社区二创）",
         "DeepSeek-mint-cursors",
         "deepseek",
+        "BV1fBpn6jEVb",
+        "yunyue-1.0",
+        note="角色素材出自 YunYueSama 的 codex-deepseek-pet，采用其「大肥鱼项目署名许可 1.0」。",
     ),
-    _collection("Gemini", "Gemini 猫耳娘 · 17 状态动态光标（社区二创）", "gemini-cursors", "gemini"),
-    _collection("GLM", "GLM 黑狐耳 · 17 状态动态光标（社区二创）", "glm-cursors", "glm"),
-    _collection("Grok", "Grok 黑金双马尾 · 17 状态动态光标（社区二创）", "grok-cursors", "grok"),
-    _collection("Kimi", "Kimi 银发 · 17 状态动态光标（社区二创）", "kimi-cursors", "kimi"),
-    _collection("MiMo", "MiMo 黑白橙 · 17 状态动态光标（社区二创）", "mimo-cursors", "mimo"),
-    _collection("Qwen", "Qwen 折扇娘 · 17 状态动态光标（社区二创）", "qwen-cursors", "qwen"),
     _collection(
+        "Gemini",
+        "Gemini 猫耳娘",
+        "Gemini 猫耳娘 · 17 状态动态光标（社区二创）",
+        "gemini-cursors",
+        "gemini",
+        "BV1MGpD62ExT",
+        "zipzip-nc",
+    ),
+    _collection(
+        "GLM",
+        "GLM 黑狐耳",
+        "GLM 黑狐耳 · 17 状态动态光标（社区二创）",
+        "glm-cursors",
+        "glm",
+        "BV1x7pD6VENQ",
+        "zipzip-nc",
+    ),
+    _collection(
+        "Grok",
+        "Grok 黑金双马尾",
+        "Grok 黑金双马尾 · 17 状态动态光标（社区二创）",
+        "grok-cursors",
+        "grok",
+        "BV1N7pD6VECC",
+        "zipzip-nc",
+    ),
+    _collection(
+        "Kimi",
+        "Kimi 银发",
+        "Kimi 银发 · 17 状态动态光标（社区二创）",
+        "kimi-cursors",
+        "kimi",
+        "BV1TLpD6yEwC",
+        "zipzip-nc",
+    ),
+    _collection(
+        "MiMo",
+        "MiMo 黑白橙",
+        "MiMo 黑白橙 · 17 状态动态光标（社区二创）",
+        "mimo-cursors",
+        "mimo",
+        "BV1KLpD6yE1d",
+        "zipzip-nc",
+        note="上游自述 MiMo 这一具体造型的原始插画作者尚未确认。",
+    ),
+    _collection(
+        "Qwen",
+        "Qwen 折扇娘",
+        "Qwen 折扇娘 · 17 状态动态光标（社区二创）",
+        "qwen-cursors",
+        "qwen",
+        "BV1ZYpD6wE9y",
+        "zipzip-nc",
+    ),
+    _collection(
+        "Seedream",
         "Seedream",
         "Seedream · 17 状态动态光标（社区二创）",
         "bytedance-cursors",
         "seedream",
+        "BV1ZYpD6wEWU",
+        "zipzip-nc",
     ),
-    _collection("Doubao", "豆包 · 17 状态动态光标（社区二创）", "bytedance-cursors", "doubao"),
+    _collection(
+        "Doubao",
+        "豆包",
+        "豆包 · 17 状态动态光标（社区二创）",
+        "bytedance-cursors",
+        "doubao",
+        "BV1ZYpD6wEWU",
+        "zipzip-nc",
+        note="豆包造型依用户提供的短发全身图与 App 头像对照制作。",
+    ),
 )
 
 
