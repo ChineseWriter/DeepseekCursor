@@ -122,10 +122,23 @@ class CatalogTests(unittest.TestCase):
                     self.assertTrue(spec.note, "没有仓库的主题必须写明来源说明")
 
     def test_license_ids_are_from_a_closed_set(self):
-        known = {"cc-by-nc-sa-4.0", "zipzip-nc", "yunyue-1.0", "unconfirmed"}
+        known = {
+            "cc-by-nc-sa-4.0",
+            "zipzip-nc",
+            "upstream-nc-author-unconfirmed",
+            "yunyue-1.0",
+            "unconfirmed",
+        }
         for spec in THEMES:
             with self.subTest(theme=spec.name):
                 self.assertIn(spec.license_id, known)
+
+    def test_author_unconfirmed_themes_are_not_in_the_zipzip_group(self):
+        """上游明确"未确认原作者"的造型不得被并入 ZipZipPipe 组（曾犯过这个错）。"""
+        for spec in THEMES:
+            if spec.name in {"MiMo", "Doubao"}:
+                with self.subTest(theme=spec.name):
+                    self.assertEqual(spec.license_id, "upstream-nc-author-unconfirmed")
 
     def test_theme_by_name_raises_for_unknown(self):
         with self.assertRaises(KeyError):

@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import os
+import struct
 import sys
 import unittest
 from pathlib import Path
@@ -24,6 +25,9 @@ from _xcur_ref import frames_of, parse  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 THEMES_DIR = REPO_ROOT / "themes"
+
+#: 与 bigfatfish.preview.MAX_SAMPLED_FRAMES 一致（预览每列最多几帧）
+PREVIEW_MAX_FRAMES = 3
 
 #: BigFatFish 是首个已实测通过的成品，帧数是该素材的事实快照。
 #: 它变化意味着素材或构建代码被动过，必须人工确认后再更新本表。
@@ -129,6 +133,57 @@ class ShippedThemeTests(unittest.TestCase):
             with self.subTest(cursor=name):
                 parsed = parse((cursors / name).read_bytes())
                 self.assertEqual(len(frames_of(parsed, 64)), expected)
+
+    def test_every_theme_ships_its_preview(self):
+        """预览图必须是本主题自己渲染的：尺寸由清单与光标帧数唯一决定。"""
+        for spec in THEMES:
+            theme_dir = THEMES_DIR / spec.name
+            if not theme_dir.is_dir():
+                continue
+            with self.subTest(theme=spec.name):
+                blob = (theme_dir / "preview.png").read_bytes()
+                self.assertEqual(blob[:8], b"\x89PNG\r\n\x1a\n", "不是 PNG")
+                length, tag = struct.unpack_from(">I4s", blob, 8)
+                self.assertEqual(tag, b"IHDR")
+                width, height = struct.unpack_from(">II", blob, 16)
+                cell = max(spec.sizes)
+                rows = 0
+                for cursor in spec.cursors:
+                    parsed = parse((theme_dir / "cursors" / cursor.canonical).read_bytes())
+                    rows = max(rows, min(len(frames_of(parsed, cell)), PREVIEW_MAX_FRAMES))
+                self.assertEqual(width, cell * len(spec.cursors))
+                self.assertEqual(height, cell * rows)
+
+    def test_every_theme_ships_its_attribution(self):
+        for spec in THEMES:
+            theme_dir = THEMES_DIR / spec.name
+            if not theme_dir.is_dir():
+                continue
+            with self.subTest(theme=spec.name):
+                text = (theme_dir / "ATTRIBUTION.md").read_text(encoding="utf-8")
+                self.assertIn(spec.name, text)
+                self.assertIn(spec.video, text)
+                # 每个主题都必须写明署名要求与商用与否（不同来源结论不同，但都得写清楚）
+                self.assertIn("署名", text)
+                self.assertIn("商用", text)
+                if spec.repo:
+                    self.assertIn(spec.repo, text)
+                # 防漂移：署名文件里的许可分组与状态数必须与清单一致
+                self.assertIn(f"`{spec.license_id}`", text, "许可分组与 catalog 不一致")
+                self.assertIn(f"{len(spec.cursors)} 个状态", text, "状态数与 catalog 不一致")
+                if spec.license_id == "upstream-nc-author-unconfirmed":
+                    # 上游明确未确认作者的造型：不得被署名为 ZipZipPipe 的作品
+                    self.assertIn("未确认", text)
+                    self.assertNotIn("角色原作：ZipZipPipe", text)
+
+    def test_deepseek_theme_ships_the_upstream_license_text(self):
+        """该来源的许可要求分发时保留完整许可文本。"""
+        license_file = THEMES_DIR / "DeepSeekWhale" / "LICENSE-ART.txt"
+        if not license_file.is_file():
+            self.skipTest("主题未入库")
+        text = license_file.read_text(encoding="utf-8")
+        self.assertIn("大肥鱼项目署名许可", text)
+        self.assertIn("YunYueSama", text)
 
 
 if __name__ == "__main__":

@@ -10,8 +10,12 @@
   保持原样，保证已入库主题可逐字节重建。
 * :data:`COLLECTION_CURSORS` —— B 站合集（11 个仓库 / 15 个角色）统一的 17 个 Windows 角色。
 
-别名一律取 freedesktop/X11 的通用名（覆盖基准为系统自带 ``Adwaita`` 的 63 个条目），
-让不同工具链请求的名字都能命中；别名在生成时做成**相对软链**，主题目录可整体搬移。
+别名取 freedesktop/X11 的通用名，**参考**系统自带 ``Adwaita`` 的 63 个条目，
+但不承诺逐条对齐（``grab``/``copy``/``context-menu``/``dnd-*``/``zoom-*`` 等未映射，
+请求它们的应用会回退到系统主题）；别名在生成时做成**相对软链**，主题目录可整体搬移。
+
+**许可分组（``license_id``）必须与上游声明一致**：不同来源条件不同，不得互相套用；
+上游明确表示"未确认原作者"的造型，**不得**被标注成某个已确认作者的作品。
 """
 
 from __future__ import annotations
@@ -248,7 +252,8 @@ THEMES: tuple[ThemeSpec, ...] = (
         "fable",
         "BV1MGpD62EVE",
         "zipzip-nc",
-        note="v1.0.1 按用户提供的全身图重做 Fable 形象，与 Opus 区分开。",
+        note="v1.0.1 按用户提供的全身图重做 Fable 形象，与 Opus 区分开；"
+        "上游同时说明原作者身份并未因用户提供图片而得到额外确认。",
     ),
     _collection(
         "AstraMint",
@@ -323,8 +328,9 @@ THEMES: tuple[ThemeSpec, ...] = (
         "mimo-cursors",
         "mimo",
         "BV1KLpD6yE1d",
-        "zipzip-nc",
-        note="上游自述 MiMo 这一具体造型的原始插画作者尚未确认。",
+        "upstream-nc-author-unconfirmed",
+        note="上游明确写道：MiMo 这一具体造型的原始插画作者尚未确认，"
+        "不将它标注为 ZipZipPipe 已确认作品；新增动作仍只用于非商业社区分享。",
     ),
     _collection(
         "Qwen",
@@ -351,8 +357,9 @@ THEMES: tuple[ThemeSpec, ...] = (
         "bytedance-cursors",
         "doubao",
         "BV1ZYpD6wEWU",
-        "zipzip-nc",
-        note="豆包造型依用户提供的短发全身图与 App 头像对照制作。",
+        "upstream-nc-author-unconfirmed",
+        note="上游明确写道：豆包造型依**用户提供**的短发全身图与 App 头像对照制作，"
+        "不作已确认作者的表述；新增动作仍只用于非商业社区分享。",
     ),
 )
 
