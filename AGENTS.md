@@ -10,17 +10,28 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 
 ## 1. 项目定位
 
-**BigFatFish（大肥鱼）光标主题 —— 面向 Ubuntu 26.04 / Wayland 的可用鼠标光标**
+**AI 娘光标主题集 —— 面向 Ubuntu 26.04 / Wayland 的可用鼠标光标（16 套）**
 
-- **主交付物**：可直接安装使用的 Linux 光标主题，位于根目录 [`BigFatFish/`](BigFatFish)（`index.theme` + `cursors/`，11 个动态光标 + 34 个别名，32/48/64 三档原生尺寸）。**克隆仓库即可安装**，用户不需要自己转换。
+- **主交付物**：可直接安装使用的 Linux 光标主题，位于 [`themes/`](themes)（每套 `index.theme` +
+  `cursors/` + `preview.png` + `ATTRIBUTION.md`）。**克隆仓库即可安装**，用户不需要自己转换。
+  - 15 套 AI 娘主题：17 个动态光标 + 56 个别名，32/48/64 三档原生尺寸（更大档按需本地构建）。
+  - 1 套 `BigFatFish`：11 个动态光标 + 34 个别名，32/48/64。
 - 目标平台：Ubuntu 26.04 LTS，**Wayland** 会话（GNOME 实测；KDE 等同理）。
-- 上游来源：Windows 动画光标包（`.ani` + `install.inf`），形象与许可链见 [THIRD-PARTY.md](THIRD-PARTY.md) 与 [ATTRIBUTION.md](ATTRIBUTION.md)。
-- **次要交付物**：`tools/` 中从 `.ani` 重新生成该主题的转换器（Python，由 `uv` 管理，零第三方依赖）。它保证"主题怎么来的、怎么可复现"，**不是项目的目的**。
-- 许可：主题美术与文档 `CC-BY-NC-SA-4.0`（非商业）；代码 `AGPL-3.0-or-later`；Windows 原始素材**不入库**。
+- 上游来源：`BigFatFish` 来自 Windows 动画光标包（`.ani` + `install.inf`）；其余 15 套来自同一 UP 的
+  11 个 GitHub 光标仓库（B 站合集「AI形象动态指针」）。形象与许可链见
+  [docs/SOURCES.md](docs/SOURCES.md)、[THIRD-PARTY.md](THIRD-PARTY.md) 与 [ATTRIBUTION.md](ATTRIBUTION.md)。
+- **次要交付物**：`tools/` 中重建全部主题的转换器（Python，由 `uv` 管理，零第三方依赖）。
+  它保证"主题怎么来的、怎么可复现"，**不是项目的目的**。
+- 许可：**逐主题不同，分 5 组**（9 套 `ZipZipPipe` 署名 + 禁止商用；2 套上游非商业·**角色作者未确认**；
+  1 套 `DeepSeekWhale` 依上游署名许可；3 套权利未确认；1 套 `BigFatFish` 依形象链 CC BY-NC-SA 4.0）。
+  代码 `AGPL-3.0-or-later`；本项目原创文档 `CC-BY-NC-SA-4.0`；**上游原始素材一律不入库**。
 
 > **不要把本项目当成"光标转换工具"**：主题本体才是交付物，工具只是可复现性的保障。
 > 上游是 Windows 专有格式，涉及多帧动画、帧速率、热点（hotspot）、多尺寸与回退链，**不要假设 1:1 直转**；
 > Wayland 下光标由合成器加载，主题的 `index.theme` / `cursors/` 结构必须正确。
+>
+> **来源不同的素材必须分别标注许可**：不得把某一来源的宽松条件套到另一来源上，
+> 也不得把"推断"写成"已获授权"。
 
 ---
 
@@ -99,7 +110,9 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 4. 不凭空造数据：只使用素材里真实存在的尺寸与格式，不做无依据的放大插值与格式臆造。
 5. 改动范围必须能用一句话写进提交信息；说不清就是范围过大，应拆分提交。
 6. 删除或覆盖前先确认目标身份：只删自己生成的产物；对可能已存在的目录加护栏（参照 `theme.py` 的"非本工具生成则拒绝写入"与 `--force`）。
-7. 生成物与临时验证产物不进仓库，也不长期留在工作区（用完清理）——**例外**：主交付物 `BigFatFish/` 与 `docs/preview.png` 属于交付内容，必须入库。
+7. 生成物与临时验证产物不进仓库，也不长期留在工作区（用完清理）——**例外**：主交付物 `themes/`
+   （主题文件与各主题的 `preview.png`、`ATTRIBUTION.md`、`LICENSE-ART.txt`）属于交付内容，必须入库。
+   本地按需构建的更大档版本（如含 128 档）放在 `tmp/` 等工作区暂存目录，**不入库**。
 
 ### R5 — 工作区外改动必须汇报
 
@@ -116,26 +129,30 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 ```
 .
 ├── AGENTS.md                     # 本文件（含 §4 校验、§8 许可与合规）
-├── BigFatFish/                   # ★ 主交付物：主题本体（index.theme + cursors/）
+├── .github/workflows/            # CI（跑 tools/ 的单元测试）
+├── themes/<主题名>/               # ★ 主交付物：主题本体（index.theme + cursors/ + preview.png + ATTRIBUTION.md）
 ├── install.sh                    # 安装 / 卸载主题（默认 dry-run；写 $HOME 属 R5 管辖）
-├── ATTRIBUTION.md                # 署名与许可（对外分发必须原样携带）
-├── LICENSE                       # CC BY-NC-SA 4.0（主题美术与本项目原创文档）
-├── README.md                     # 面向用户：安装、选尺寸、许可
+├── ATTRIBUTION.md                # 分层许可总览（逐主题版本在各自主题目录内）
+├── LICENSE                       # CC BY-NC-SA 4.0（本项目原创文档与预览图）
+├── README.md                     # 面向用户：主题一览、安装、选尺寸、许可
 ├── THIRD-PARTY.md                # 第三方权属、署名、授权联络、移除通道
+├── docs/SOURCES.md               # ★ 逐主题来源与许可总表
 ├── docs/PROVENANCE.md            # 素材来源取证记录（脱敏）
 ├── docs/TECH-NOTES.md            # 格式、加载器实测、尺寸/缩放原理
-├── docs/preview.png              # 预览图（由本仓库主题渲染）
-├── assets/                       # **唯一的本地素材区**（不入库）：Windows 原始包 + 解包结果
-└── tools/                        # 转换器：从素材重建 BigFatFish/（AGPL-3.0-or-later）
+├── assets/                       # **唯一的本地素材区**（不入库）：Windows 原始包 + 上游仓库稀疏克隆
+└── tools/                        # 转换器：从素材重建 themes/（AGPL-3.0-or-later）
     ├── LICENSE                   # AGPL 全文（代码层）
     ├── pyproject.toml / uv.lock  # uv 项目定义与锁文件（依赖唯一来源）
-    ├── src/bigfatfish/           # ani.py / xcursor.py / theme.py / __main__.py
+    ├── src/bigfatfish/           # ani / xcursor / catalog / theme / preview / __main__
     ├── tests/                    # stdlib unittest；含独立 XCursor/ANI 交叉校验器
     └── scripts/set-cursor-size.sh # 调光标尺寸（默认只读预览；写 gsettings 属 R5）
 ```
 
-目录按需创建；新增顶层目录时同步更新本节。**主题本体在根目录**：不要把它挪回 `themes/` 之类的"生成物"位置，
-那会让项目重新看起来像个工具仓。
+> 预览图**只有** `themes/<主题名>/preview.png` 一种，由 `build` 生成；不要另外维护手搓预览图
+> （历史上曾有一份 `docs/preview.png`，无法由工具重建、且与主题预览重复，已移除）。
+
+目录按需创建；新增顶层目录时同步更新本节。**主题本体在 `themes/` 下**：每套主题是一个完整的光标主题目录，
+可以单独复制出去安装；不要再把它们摊回仓库根目录（会看不出哪套是哪套）。
 
 ## 4. 校验命令（提交前必跑）
 
@@ -143,17 +160,22 @@ Agent 在开始任何任务前必须先读完本文件；与本文件冲突的�
 # 测试（唯一必需的校验；零第三方依赖，无需安装任何包）
 cd tools && PYTHONPATH=src uv run python -m unittest discover -s tests -v
 
-# 端到端重建主题（覆盖根目录 BigFatFish/）
-cd tools && PYTHONPATH=src uv run python -m bigfatfish build
+# 端到端重建全部主题（覆盖 themes/ 下的 index.theme、cursors/ 与 preview.png）
+cd tools && PYTHONPATH=src uv run python -m bigfatfish build --all
+
+# 只看主题清单 / 角色映射（不需要素材）
+cd tools && PYTHONPATH=src uv run python -m bigfatfish themes
 
 # 引入 ruff 之后再补：cd tools && uv run ruff check .
 ```
 
-三点说明：
+四点说明：
 
 - uv 用**它自己的缓存**（`~/.cache/uv`），不在仓库里堆积缓存文件；只有当环境不允许写 `$HOME`（例如只读沙箱）时，才临时加 `UV_CACHE_DIR="$PWD/.uv-cache"`（该目录已被 `.gitignore` 拦截）。
 - `uv` 若不在 `PATH`（例如只装在 `~/.local/bin`），用 `UV=$(command -v uv || echo "$HOME/.local/bin/uv")` 取路径。
 - `PYTHONPATH=src` 是必要的：`pyproject.toml` 设了 `package = false`（零依赖、不引入打包后端），源码目录不会自动进 `sys.path`；`cd tools` 是因为 uv 项目定义在 `tools/`。CLI 的默认素材/输出路径按**仓库根目录**解析，所以在仓库内任何位置调用都不需要额外参数。
+- `build` 需要本地素材（`assets/`，不入库）。**没有素材时 `--all` 会明确报出缺哪些文件**；
+  测试本身不需要素材：`test_shipped_theme.py` 直接验收已入库的主题。
 
 工具尚未配置时，至少跑通当前已存在的部分；不得以"还没配"为由跳过已存在的检查。
 
@@ -170,15 +192,30 @@ cd tools && PYTHONPATH=src uv run python -m bigfatfish build
 ## 6. 已知待办（bootstrap）
 
 - [x] `uv` 已就绪（用户级安装；不在 `PATH` 时用 `$HOME/.local/bin/uv`，见 §4）。
-- [x] **主交付物已入库**：根目录 `BigFatFish/`（11 光标 / 34 别名 / 32·48·64 三档），`install.sh` 可一键安装；已在本机 Ubuntu 26.04 / Wayland 实测（动效、热点、清晰度均确认）。
-- [x] 转换器已实现并通过 **50 项测试**（含安全审计后补的回归用例），位于 `tools/`；重建产物与已入库主题**逐字节一致**。
+- [x] **主交付物已入库**：`themes/` 下 **16 套**主题（15 套 AI 娘 17 光标 / 56 别名 + `BigFatFish` 11 光标 / 34 别名，
+  入库档 32·48·64），`install.sh --theme <名>` 可逐套装；已在本机 Ubuntu 26.04 / Wayland 实测
+  （动效、热点、清晰度与"优化/GNOME Tweaks 里能看到并切换"均确认）。
+- [x] 转换器已实现并通过 **86 项测试**，位于 `tools/`；`--sizes` 支持按需构建 128/256 档（素材具备时）。
 - [x] 独立安全审计已完成（两个只读子代理，互不通气），其发现均已修复并补测试；含缩放值的提交已重写历史并回收旧对象。
-- [x] **许可结论已修订**：主题作为形象链的演绎作品按 `CC-BY-NC-SA-4.0` **入库并分发**（见 §8.1 与 [ATTRIBUTION.md](ATTRIBUTION.md)）；**Windows 原始素材仍不入库**（理由见 [THIRD-PARTY.md](THIRD-PARTY.md) §2）。
-- [x] 素材元数据已核查：`install.inf`、`uninstall.bat`、全部 `.ani` 的 RIFF `LIST INFO` 均**不含**作者、许可或来源信息，故权利判断只能依据外部来源（见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6）。
+- [x] **多来源版本的独立评审已完成**（两个只读子代理：隐私泄漏审计 + 合规/技术审计）。
+  隐私审计：全历史与全部被跟踪内容、二进制元数据均无 R3 命中，判定可推送。
+  合规审计发现 1 项阻断：`MiMo`/`Doubao` 曾被错误并入 ZipZipPipe 组并被要求署名 `ZipZipPipe`，
+  而上游明确"未确认该造型的原始插画作者"；**已拆为独立分组并同步全部文档**（见 §8.3 新增条目）。
+- [x] **许可结论已修订为"逐主题不同（5 组）"**：9 套依 `ZipZipPipe` 图库条件（署名 + 禁止商用）；
+  2 套（`MiMo`/`Doubao`）上游非商业但**角色作者未确认**；`DeepSeekWhale` 依 `YunYueSama` 署名许可；
+  `ChatGPTDragon` / `AstraMint` / `SolMint` 权利未确认（已显著标注）；`BigFatFish` 依形象链 CC BY-NC-SA 4.0。
+  逐主题义务见 [docs/SOURCES.md](docs/SOURCES.md)；**上游原始素材仍不入库**（理由见 [THIRD-PARTY.md](THIRD-PARTY.md) §2）。
+- [x] 素材元数据已核查：`install.inf`、`uninstall.bat`、`.ani` 的 RIFF `LIST INFO`、以及上游合集全部 `.ani`
+  均**不含**作者、许可或来源信息，故权利判断只能依据外部声明（见 [docs/PROVENANCE.md](docs/PROVENANCE.md)）。
 - [x] 主题二进制已核查：无任何有意义的内嵌字符串（`Xcur` 魔数之外皆为像素噪声）。
-- [ ] 待办：向即时上游（`4evergr8`）取得书面确认，把"依上游链条推断"变成"明确授权"（联络要点见 [THIRD-PARTY.md](THIRD-PARTY.md) §3）；**不阻塞发布**。
-- [ ] 清晰度取决于**显示缩放与素材原生档的匹配**：需求像素超出最大原生档时，合成器只能拉伸。调优方法与公式见 [docs/TECH-NOTES.md](docs/TECH-NOTES.md)；**具体机器的缩放值等参数一律不入库（R3）**。
-- [ ] 若要在更大尺寸下保持清晰，必须取得**比现有素材更大分辨率**的原始素材（线索见 [docs/PROVENANCE.md](docs/PROVENANCE.md) §6）。插值放大不增加真实细节，默认不做（R4）。
+- [x] 预览图已改为**由构建生成**（`preview.py`，只用自己的帧渲染），16 套主题各有 `preview.png`，可随时重建。
+- [x] 加载器差异已实测并记入 [docs/TECH-NOTES.md](docs/TECH-NOTES.md) §2：
+  `libwayland-cursor` 默认搜索 `$XDG_DATA_HOME/icons`；`libXcursor` **不搜索**，只走 X11 的应用需要 `XCURSOR_PATH`。
+- [ ] 待办：向各上游取得书面确认（ZipZipPipe 是否允许再分发派生主题、`nibushiyigeren123-bot`、
+  `YunYueSama`、`4evergr8`），把"依上游条件的推断"变成"明确授权"（联络要点见 [THIRD-PARTY.md](THIRD-PARTY.md) §3）；**不阻塞发布**。
+- [ ] 待办：为 3 个"权利未确认"的主题（`ChatGPTDragon` / `AstraMint` / `SolMint`）确认原始角色权利人。
+- [ ] 清晰度取决于**显示缩放与素材原生档的匹配**：需求像素超出主题持有的最大原生档时，合成器只能拉伸。
+  调优方法与公式见 [docs/TECH-NOTES.md](docs/TECH-NOTES.md) §3；**具体机器的缩放值等参数一律不入库（R3）**。
 - [ ] 待办：`theme.py` 不清理上一版多出来的光标文件（已知限制，未修 —— 删除他人文件的风险高于收益，R4.6）。
 - [ ] ruff 尚未引入；引入后补进 §4 校验链。
 
@@ -205,14 +242,21 @@ cd tools && PYTHONPATH=src uv run python -m bigfatfish build
 
 | 范围 | SPDX 标识 | 全文 |
 | --- | --- | --- |
-| **主题美术**：`BigFatFish/`（形象链上游的演绎作品） | `CC-BY-NC-SA-4.0` | [LICENSE](LICENSE) |
+| **主题美术**：`themes/<主题名>/`（各来源的演绎作品） | **逐主题不同，分 5 组**：9 套 ZipZipPipe 非商业；2 套上游非商业·作者未确认；1 套上游署名许可；3 套权利未确认；1 套 CC-BY-NC-SA-4.0 | 各主题目录内的 `ATTRIBUTION.md`（`DeepSeekWhale` 另有 `LICENSE-ART.txt`） |
 | 本项目**原创**的非代码内容：文档、说明、配置、预览图 | `CC-BY-NC-SA-4.0` | [LICENSE](LICENSE) |
 | 代码：`install.sh`、`tools/` | `AGPL-3.0-or-later` | [tools/LICENSE](tools/LICENSE) |
-| Windows 原始素材及其分发物 | 第三方权利，**本仓库不收录** | [THIRD-PARTY.md](THIRD-PARTY.md) |
+| 上游仓库内容与 Windows 原始素材 | 第三方权利，**本仓库不收录** | [THIRD-PARTY.md](THIRD-PARTY.md) |
 
-主题美术采用 `CC-BY-NC-SA-4.0` 而不是更宽松的许可，原因：形象链上游（`ZipZipPipe` 基于 `上善无形`）本身就是"非商业 + 相同方式共享"，依据 [THIRD-PARTY.md](THIRD-PARTY.md) §2 的分析，该许可**允许**非商业分发与改编 —— 我们据此发布，并严格履行署名与相同方式共享义务。标成允许商用会造成权利状态误导，**不得**这么写。
+**逐主题来源与义务以 [docs/SOURCES.md](docs/SOURCES.md) 为唯一真实来源**，本表只是目录级摘要。
+要点：`ZipZipPipe` 图库条件为"署名 + 禁止商用"，其许可**未授予再许可**，本项目按非商业社区分享分发转换结果；
+`MiMo`/`Doubao` 的角色**原作者未确认**，不得署名给 ZipZipPipe；
+`DeepSeekWhale` 依 `YunYueSama` 的自定义署名许可（允许含商用，须署名 + 保留完整许可文本）；
+`ChatGPTDragon` / `AstraMint` / `SolMint` 的上游权利**未确认**，已显著标注、禁止商用、权利人主张即移除。
+标成"整体可商用"会造成权利状态误导，**不得**这么写。
 
-若将来替换为**完全自有**的美术，主题层可放宽为 `CC-BY-SA-4.0`；那是一处一次性改动，须同步更新本表、[ATTRIBUTION.md](ATTRIBUTION.md)、[README.md](README.md) 与 [THIRD-PARTY.md](THIRD-PARTY.md)。
+若将来替换为**完全自有**的美术，相应主题层可放宽为 `CC-BY-SA-4.0`；那是一处一次性改动，
+须同步更新本表、[docs/SOURCES.md](docs/SOURCES.md)、[ATTRIBUTION.md](ATTRIBUTION.md)、[README.md](README.md)
+与该主题目录内的 `ATTRIBUTION.md` 及 [THIRD-PARTY.md](THIRD-PARTY.md)。
 
 ### 8.2 硬性要求
 
@@ -220,21 +264,40 @@ cd tools && PYTHONPATH=src uv run python -m bigfatfish build
    - Python / 代码：`# SPDX-License-Identifier: AGPL-3.0-or-later`
    - 文档 / 配置：`<!-- SPDX-License-Identifier: CC-BY-NC-SA-4.0 -->`（按其语法选注释符）
    - 版权行统一写 `Copyright (C) 2026 BigFatFish contributors`，不得写真实姓名。
-   - **例外**：[LICENSE](LICENSE) 与 [tools/LICENSE](tools/LICENSE) 是许可证**逐字原文**，不得加头、不得改动一个字；`uv.lock` 是工具生成的锁文件（R2 禁止手工编辑）；二进制（`BigFatFish/` 主题、`docs/preview.png`）无注释语法，不加头但在本表登记。
+   - **例外**：[LICENSE](LICENSE) 与 [tools/LICENSE](tools/LICENSE) 是许可证**逐字原文**，不得加头、不得改动一个字；
+     第三方许可**逐字原文**同样不加头、不得改动（如 `themes/DeepSeekWhale/LICENSE-ART.txt`）；
+     `uv.lock` 是工具生成的锁文件（R2 禁止手工编辑）；
+     二进制（`themes/` 下的主题文件与 `preview.png`）无注释语法，不加头但在本表登记。
+     生成型配置 `themes/<主题名>/index.theme` **也必须带头**：`theme.py` 会在 `[Icon Theme]` 之前写入
+     `#` 注释形式的 SPDX 行（key file 允许 `#` 注释，已用 GLib 的 `GKeyFile` 实读验证）。
 2. **素材边界**：
-   - **不得入库**：Windows 原始素材及其分发物 —— `assets/*`（压缩包与解包结果）、`*.ani`、`*.cur`、打包文件。禁止用 `git add -f` 绕过。
-   - **必须入库**：转换后的主题 `BigFatFish/`，按 §8.1 分发（这是项目的主交付物）。
-3. **不得声称本项目或产物的任何部分可商用。**
-4. **署名不可移除或篡改**；对外分发必须原样携带 [ATTRIBUTION.md](ATTRIBUTION.md)，并保留 [THIRD-PARTY.md](THIRD-PARTY.md) §4 的声明文本。
-5. **预览图只能由本仓库的 `BigFatFish/` 自行渲染**；不得内嵌上游原始分发物或视频截图。
+   - **不得入库**：上游原始素材与其分发物 —— `assets/*`（Windows 压缩包与解包结果、上游仓库稀疏克隆）、
+     `*.ani`、`*.cur`、打包文件。禁止用 `git add -f` 绕过。
+   - **必须入库**：转换后的主题 `themes/<主题名>/`（含 `index.theme`、`cursors/`、`preview.png`、
+     `ATTRIBUTION.md`；`DeepSeekWhale` 另有 `LICENSE-ART.txt`），按 §8.1 分发 —— 这是项目的主交付物。
+3. **不得声称本项目或产物的任何部分可商用**（`DeepSeekWhale` 的商用余地只来自其上游许可，须如实限定表述）。
+4. **署名不可移除或篡改**；对外分发某个主题必须原样携带**该主题目录内的 `ATTRIBUTION.md`**，
+   并保留 [THIRD-PARTY.md](THIRD-PARTY.md) §4 的声明文本。
+5. **预览图只能由本仓库的主题自行渲染**（`bigfatfish build` 生成，来源是转换时的素材帧）；
+   不得内嵌上游原始分发物、上游预览图或视频截图。
 6. **引用外部链接必须剥离跟踪参数**：`vd_source`、`spm_id_from`、`share_session_id`、`unique_k`、`timestamp` 等一律删除，只保留规范短链（这也是 R3 要求）。
 7. 本文件允许出现**第三方公开创作者标识**（用于署名与授权联络），这是 R3 的唯一例外；**本项目维护者本人的社交账号、托管账号名与仓库 URL 在任何情况下不得出现在仓库中**——包括 README 徽章（badge 的 URL 必然内嵌 owner/repo）。
+   上游创作者的仓库 URL 属于第三方标识，**可以**出现在署名与来源文档中（这是履行署名义务所需）。
 8. 任何新增第三方素材、字体、图标或代码依赖，必须同步登记到 [THIRD-PARTY.md](THIRD-PARTY.md)（名称、权利人、许可、来源）；**未登记不得合入**。
-9. 上游许可状态一旦变化（取得许可、条款更新、权利人要求移除），必须同步更新 [THIRD-PARTY.md](THIRD-PARTY.md)、[ATTRIBUTION.md](ATTRIBUTION.md)、[README.md](README.md) 许可表与 `.gitignore`，并在提交信息中说明原因。
+9. 上游许可状态一旦变化（取得许可、条款更新、权利人要求移除），必须同步更新 [THIRD-PARTY.md](THIRD-PARTY.md)、
+   [docs/SOURCES.md](docs/SOURCES.md)、[ATTRIBUTION.md](ATTRIBUTION.md)、[README.md](README.md) 许可表、
+   受影响的 `themes/<主题名>/ATTRIBUTION.md` 与 `.gitignore`，并在提交信息中说明原因。
 
 ### 8.3 冲突与不确定
 
 - 无法确认权属的**原始分发物**，默认**不收录**，而不是"先用着再说"。
 - 演绎作品只有在**上游许可链条可以依据**时才入库，且必须如实声明推断依据与残余风险，不得把推断写成"已获授权"。
+- **例外且仅此一次**：`ChatGPTDragon` / `AstraMint` / `SolMint` 三套主题的上游权利未确认，
+  但项目所有者明确决定"收录并显著标注"（理由：上游以公开仓库发布、声明为非商业社区分享）。
+  该决定已记录在 [docs/SOURCES.md](docs/SOURCES.md) §2.4；**这不构成其他未确认来源可照此办理的先例**。
+- **不得替未确认的作者"补"一个署名**：上游若明确表示某造型的作者未确认（如 `MiMo`、`豆包`），
+  该事实必须原样保留，**禁止**把它并入某个有署名依据的分组、或写成某位作者的作品。
+  这类主题单独成组（`upstream-nc-author-unconfirmed`），非商业、可移除。
+  （本仓库曾把 `MiMo`/`Doubao` 错误并入 ZipZipPipe 组，已由独立审计发现并修正。）
 - 许可义务与功能需求冲突时，许可优先：改用自有素材或放弃该功能，不得靠"不会被发现"绕过。
 - 权利人要求移除时立即执行（流程见 [THIRD-PARTY.md](THIRD-PARTY.md) §5）。
