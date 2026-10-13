@@ -12,8 +12,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import xcursor
-from .ani import AnimatedCursor, read_ani_file
+from . import preview, xcursor
+from .ani import AnimatedCursor, Frame, read_ani_file
 from .catalog import CursorSpec, ThemeSpec
 
 
@@ -37,6 +37,8 @@ class BuildReport:
     name: str
     out_dir: Path
     cursors: tuple[CursorReport, ...]
+    preview_bytes: int = 0
+    preview_size: tuple[int, int] = (0, 0)
 
     @property
     def total_bytes(self) -> int:
@@ -51,15 +53,14 @@ def _path_for(spec: ThemeSpec, assets_root: Path, cursor: CursorSpec, size: int 
     return assets_root / spec.pattern.format(source=cursor.source, size=size)
 
 
-def _images_for(cursor: AnimatedCursor, sizes: tuple[int, ...]) -> list[xcursor.XImage]:
-    """取出指定标称尺寸的全部帧，保持素材里的帧序（不做任何缩放）。"""
-    images: list[xcursor.XImage] = []
+def _frames_for(cursor: AnimatedCursor, sizes: tuple[int, ...]) -> list[tuple[Frame, int]]:
+    """取出指定标称尺寸的 (帧, 延迟) 序列，保持素材里的帧序（不做任何缩放）。"""
+    out: list[tuple[Frame, int]] = []
     for step in cursor.steps:
         for frame in step.frames:
-            nominal = max(frame.width, frame.height)
-            if nominal in sizes:
-                images.append(xcursor.image_from_frame(frame, nominal, step.delay_ms))
-    return images
+            if max(frame.width, frame.height) in sizes:
+                out.append((frame, step.delay_ms))
+    return out
 
 
 def _missing_assets(
@@ -123,33 +124,44 @@ def build_theme(
         raise ThemeError(f"{out_dir} 已存在且不是本工具生成的主题；确认覆盖请加 --force")
 
     per_size = "{size}" in spec.pattern
+    preview_cell = max(use_sizes)
 
     # 先全部解析并编码，再统一落盘：任一素材有问题时不会留下新旧混合的半成品
     planned: list[tuple[CursorSpec, bytes, int, int, tuple[int, ...]]] = []
+    preview_columns: list[tuple[Frame, ...]] = []
     for cursor in spec.cursors:
         _validate_name(cursor.canonical)
 
-        images: list[xcursor.XImage] = []
+        pairs: list[tuple[Frame, int]] = []
         frame_counts: set[int] = set()
         if per_size:
             for size in use_sizes:
                 parsed = read_ani_file(_path_for(spec, assets_root, cursor, size))
                 frame_counts.add(len(parsed.steps))
-                images.extend(_images_for(parsed, (size,)))
+                pairs.extend(_frames_for(parsed, (size,)))
         else:
             parsed = read_ani_file(_path_for(spec, assets_root, cursor, None))
             frame_counts.add(len(parsed.steps))
-            images.extend(_images_for(parsed, use_sizes))
+            pairs.extend(_frames_for(parsed, use_sizes))
 
         if len(frame_counts) != 1:
             # 各档帧数不同则动画无法逐帧对齐：宁可报错，也不静默凑一个长度
             raise ThemeError(
                 f"{cursor.source}：各档帧数不一致 {sorted(frame_counts)}，动画无法对齐"
             )
-        if not images:
+        if not pairs:
             raise ThemeError(f"{cursor.source}：没有匹配尺寸 {use_sizes} 的帧")
 
+        images = [
+            xcursor.image_from_frame(frame, max(frame.width, frame.height), delay)
+            for frame, delay in pairs
+        ]
         written_sizes = tuple(sorted({image.nominal for image in images}))
+        preview_columns.append(
+            preview.sample_frames(
+                [frame for frame, _delay in pairs if max(frame.width, frame.height) == preview_cell]
+            )
+        )
         planned.append(
             (
                 cursor,
@@ -202,7 +214,19 @@ def build_theme(
         encoding="utf-8",
     )
 
-    return BuildReport(name=spec.name, out_dir=out_dir, cursors=tuple(reports))
+    # 预览图只由本主题自己的帧渲染，随构建一起重新生成（见 preview.py）
+    preview_png = preview.build_preview(preview_columns, preview_cell)
+    _write_atomic(out_dir / "preview.png", preview_png)
+
+    return BuildReport(
+        name=spec.name,
+        out_dir=out_dir,
+        cursors=tuple(reports),
+        preview_bytes=len(preview_png),
+        preview_size=(preview_cell * len(preview_columns), preview_cell * max(
+            len(column) for column in preview_columns
+        )),
+    )
 
 
 def _validate_name(name: str) -> None:
