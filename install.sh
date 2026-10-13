@@ -17,7 +17,8 @@ DEFAULT_THEME="BigFatFish"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 THEMES_DIR="$SCRIPT_DIR/themes"
 
-THEME_NAME="$DEFAULT_THEME"
+THEME_NAME=""
+SOURCE_DIR=""
 ACTION="install"
 CONFIRM=0
 FORCE=0
@@ -29,6 +30,10 @@ usage() {
 
 选项:
   --theme NAME    要安装 / 卸载的主题（默认 $DEFAULT_THEME；--list 可看全部）
+  --source DIR    改用这个目录作为源（默认 themes/NAME）；
+                  用于安装本地按需构建的更大档版本，例如：
+                    tools: build --theme NAME --sizes 32,48,64,128 --out tmp/local/NAME
+                    ./install.sh --theme NAME --source tmp/local/NAME --yes
   --list          列出仓库内全部主题后退出
   --yes, -y       真正写入（不加则只打印计划）
   --uninstall     卸载，移入回收站（默认是安装）
@@ -59,6 +64,7 @@ is_our_theme() {
 while [ $# -gt 0 ]; do
   case "$1" in
     --theme) THEME_NAME="${2:?--theme 需要一个名称}"; shift 2 ;;
+    --source) SOURCE_DIR="${2:?--source 需要一个路径}"; shift 2 ;;
     --list) list_themes; exit 0 ;;
     --uninstall) ACTION="uninstall"; shift ;;
     --target) TARGET_DIR="${2:?--target 需要一个路径}"; shift 2 ;;
@@ -69,11 +75,18 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+if [ -n "$SOURCE_DIR" ]; then
+  # 用 --source 时主题名默认取该目录名，护栏仍按 index.theme 里的 Name 核对
+  : "${THEME_NAME:=$(basename -- "$SOURCE_DIR")}"
+else
+  : "${THEME_NAME:=$DEFAULT_THEME}"
+  SOURCE_DIR="$THEMES_DIR/$THEME_NAME"
+fi
+
 case "$THEME_NAME" in
   ""|*/*|.|..) echo "错误：主题名非法：$THEME_NAME" >&2; exit 2 ;;
 esac
 
-SOURCE_DIR="$THEMES_DIR/$THEME_NAME"
 : "${TARGET_DIR:=${XDG_DATA_HOME:-$HOME/.local/share}/icons/$THEME_NAME}"
 
 echo "动作      : $ACTION"
